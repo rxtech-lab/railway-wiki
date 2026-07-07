@@ -1,0 +1,477 @@
+# railway-wiki - Development Guide for AI Agents
+
+This document provides comprehensive information about the server architecture, API structure, and testing guidelines for AI agents working on this codebase.
+
+## Project Overview
+
+This is a Go web server built with:
+- **Framework**: Fiber (Express-like web framework for Go)
+- **ORM**: GORM (Object-Relational Mapping)
+- **DI**: Wire (Compile-time dependency injection)
+- **API**: OpenAPI 3.0 with code generation
+- **Database**: PostgreSQL
+
+## Architecture
+
+### Directory Structure
+
+```
+railway-wiki/
+├── api/                      # OpenAPI specifications
+│   └── openapi.yaml         # API definition
+├── cmd/
+│   └── server/
+│       └── main.go          # Application entry point
+├── internal/
+│   ├── api/                 # Generated API code (DO NOT EDIT)
+│   │   └── gen.go
+│   ├── config/              # Configuration management
+│   │   └── config.go
+│   ├── database/            # Database setup and migrations
+│   │   └── database.go
+│   ├── dto/                 # Data Transfer Objects
+│   │   └── dto.go
+│   ├── models/              # Database models
+│   │   └── models.go
+│   ├── server/              # HTTP handlers
+│   │   ├── server.go        # Handler implementations
+│   │   ├── server_test.go   # Handler tests
+│   │   ├── wire.go          # Dependency injection configuration
+│   │   └── wire_gen.go      # Generated wire code (DO NOT EDIT)
+│   ├── service/             # Business logic layer
+│   │   └── service.go
+│   ├── testutil/            # Testing utilities
+│   │   └── testdb.go
+│   └── utils/               # Utility functions
+│       └── utils.go
+└── tools/                   # Code generation tools
+    ├── config.yaml          # oapi-codegen config
+    └── tools.go             # Tool dependencies
+```
+
+### Key Architectural Patterns
+
+1. **API-First Development**: Define API in OpenAPI spec first, then generate code
+2. **Dependency Injection**: Use Wire for compile-time DI
+3. **Layered Architecture**: Handlers → Services → Models
+4. **Strict Server Mode**: Type-safe request/response handling
+
+## API Structure
+
+### Current Endpoints
+
+All endpoints are defined in `api/openapi.yaml`:
+
+#### Health Check
+- **GET /health**
+  - Returns server health status
+  - No authentication required
+  - Response: `{ "status": "ok" }`
+
+#### Examples Resource
+- **GET /api/v1/examples**
+  - List all examples
+  - Response: Array of Example objects
+
+- **POST /api/v1/examples**
+  - Create a new example
+  - Request Body: `{ "name": string, "description": string? }`
+  - Response: Created Example object
+
+- **GET /api/v1/examples/{id}**
+  - Get example by ID
+  - Path Parameter: `id` (UUID)
+  - Response: Example object
+
+### Adding New Endpoints
+
+1. **Update OpenAPI Spec** (`api/openapi.yaml`):
+```yaml
+paths:
+  /api/v1/your-resource:
+    get:
+      summary: List resources
+      operationId: listResources
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Resource'
+```
+
+2. **Regenerate Code**:
+```bash
+make generate
+```
+
+3. **Implement Handler** in `internal/server/server.go`:
+```go
+func (s *Server) ListResources(ctx context.Context, request api.ListResourcesRequestObject) (api.ListResourcesResponseObject, error) {
+    resources, err := s.resourceService.List(ctx)
+    if err != nil {
+        return nil, err
+    }
+    return api.ListResources200JSONResponse(resources), nil
+}
+```
+
+4. **Add Business Logic** in `internal/service/`:
+```go
+func (s *ResourceService) List(ctx context.Context) ([]dto.Resource, error) {
+    // Implementation
+}
+```
+
+## Database Models
+
+### Example Model
+
+Located in `internal/models/models.go`:
+
+```go
+type Example struct {
+    ID          uuid.UUID  `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+    Name        string     `gorm:"not null"`
+    Description *string    `gorm:"type:text"`
+    CreatedAt   time.Time  `gorm:"autoCreateTime"`
+    UpdatedAt   *time.Time `gorm:"autoUpdateTime"`
+}
+```
+
+### Adding New Models
+
+1. Define model in `internal/models/models.go`
+2. Add to migrations in `internal/database/database.go`:
+```go
+func Migrate(db *gorm.DB) error {
+    return db.AutoMigrate(
+        &models.Example{},
+        &models.YourNewModel{}, // Add here
+    )
+}
+```
+
+3. Run migrations:
+```bash
+make run  # Migrations run automatically on startup
+```
+
+## Writing Tests
+
+### Testing Strategy
+
+1. **Unit Tests**: Test business logic in services
+2. **Integration Tests**: Test HTTP handlers with test database
+3. **E2E Tests**: Test full request/response cycle
+
+### Test Database Setup
+
+Use the provided test utilities in `internal/testutil/testdb.go`:
+
+```go
+func TestExample(t *testing.T) {
+    // Setup test database
+    db := testutil.SetupTestDB(t)
+    
+    // Test will automatically clean up database after completion
+    // Each test runs in isolation with a clean database
+}
+```
+
+### Writing Handler Tests
+
+Example from `internal/server/server_test.go`:
+
+```go
+func TestServer_CreateExample(t *testing.T) {
+    // Arrange
+    db := testutil.SetupTestDB(t)
+    svc := service.NewExampleService(db)
+    srv := NewServer(svc)
+    
+    // Act
+    response, err := srv.CreateExample(context.Background(), api.CreateExampleRequestObject{
+        Body: &api.CreateExampleJSONRequestBody{
+            Name:        "Test Example",
+            Description: ptr("Test Description"),
+        },
+    })
+    
+    // Assert
+    require.NoError(t, err)
+    require.NotNil(t, response)
+    
+    created, ok := response.(api.CreateExample201JSONResponse)
+    require.True(t, ok)
+    assert.Equal(t, "Test Example", created.Name)
+}
+
+func ptr(s string) *string {
+    return &s
+}
+```
+
+### Testing Patterns
+
+#### 1. Table-Driven Tests
+
+```go
+func TestExampleService_Validate(t *testing.T) {
+    tests := []struct {
+        name    string
+        input   string
+        wantErr bool
+    }{
+        {"valid input", "test", false},
+        {"empty input", "", true},
+        {"too long", strings.Repeat("a", 300), true},
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := validateInput(tt.input)
+            if tt.wantErr {
+                assert.Error(t, err)
+            } else {
+                assert.NoError(t, err)
+            }
+        })
+    }
+}
+```
+
+#### 2. Mocking with go.uber.org/mock
+
+Generate mocks:
+```bash
+mockgen -source=internal/service/service.go -destination=internal/service/mock_service.go -package=service
+```
+
+Use mocks in tests:
+```go
+func TestWithMock(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    
+    mockService := service.NewMockExampleService(ctrl)
+    mockService.EXPECT().
+        GetByID(gomock.Any(), "123").
+        Return(&dto.Example{Name: "test"}, nil)
+    
+    // Test code using mockService
+}
+```
+
+#### 3. Integration Tests with HTTP
+
+```go
+func TestHTTPIntegration(t *testing.T) {
+    // Setup
+    db := testutil.SetupTestDB(t)
+    svc := service.NewExampleService(db)
+    srv := NewServer(svc)
+    
+    app := fiber.New()
+    strictHandler := api.NewStrictHandler(srv, nil)
+    api.RegisterHandlers(app, strictHandler)
+    
+    // Create request
+    req := httptest.NewRequest("GET", "/api/v1/examples", nil)
+    
+    // Execute
+    resp, err := app.Test(req)
+    require.NoError(t, err)
+    
+    // Assert
+    assert.Equal(t, 200, resp.StatusCode)
+    
+    // Parse response
+    var examples []api.Example
+    json.NewDecoder(resp.Body).Decode(&examples)
+    assert.NotNil(t, examples)
+}
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+make test
+
+# Run tests with coverage
+go test -cover ./...
+
+# Run specific test
+go test -v ./internal/server -run TestServer_CreateExample
+
+# Run tests with race detection
+go test -race ./...
+
+# Verbose output
+go test -v ./...
+```
+
+## Common Tasks
+
+### 1. Adding a New Resource
+
+```bash
+# 1. Update OpenAPI spec
+vim api/openapi.yaml
+
+# 2. Add model
+vim internal/models/models.go
+
+# 3. Add service
+vim internal/service/resource_service.go
+
+# 4. Regenerate code
+make generate
+
+# 5. Implement handlers
+vim internal/server/server.go
+
+# 6. Write tests
+vim internal/server/server_test.go
+
+# 7. Run tests
+make test
+```
+
+### 2. Debugging
+
+```bash
+# Run with verbose logging
+LOG_LEVEL=debug make run
+
+# Use delve debugger
+dlv debug ./cmd/server/main.go
+```
+
+### 3. Database Migrations
+
+Migrations run automatically on startup. To add new fields:
+
+1. Update model in `internal/models/`
+2. Restart server - GORM AutoMigrate will apply changes
+3. For complex migrations, consider using a migration tool like golang-migrate
+
+## Best Practices
+
+### API Design
+- Use RESTful conventions
+- Version your APIs (`/api/v1/`)
+- Return appropriate HTTP status codes
+- Use UUIDs for resource IDs
+- Include proper error messages
+
+### Error Handling
+```go
+// Return descriptive errors
+if err != nil {
+    return api.CreateExample400JSONResponse{
+        Message: fmt.Sprintf("validation failed: %v", err),
+    }, nil
+}
+
+// Don't expose internal errors to clients
+return api.CreateExample500JSONResponse{
+    Message: "internal server error",
+}, nil
+```
+
+### Testing
+- Write tests before implementing features (TDD)
+- Aim for >80% code coverage
+- Test error cases, not just happy paths
+- Use table-driven tests for multiple scenarios
+- Clean up resources in tests (use t.Cleanup or defer)
+
+### Code Organization
+- Keep handlers thin - delegate to services
+- Put business logic in services, not handlers
+- Use DTOs for data transfer between layers
+- Don't put SQL queries in handlers
+- Use meaningful variable names
+
+### Dependencies
+- Run `make generate` after changing OpenAPI spec
+- Run `go mod tidy` after adding dependencies
+- Use wire for dependency injection
+- Don't edit generated code (files with "DO NOT EDIT" headers)
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue**: Wire generation fails
+```bash
+# Solution: Make sure all providers are in wire.Build
+# Check internal/server/wire.go
+```
+
+**Issue**: API changes not reflected
+```bash
+# Solution: Regenerate code
+make generate
+```
+
+**Issue**: Database connection fails
+```bash
+# Solution: Check DATABASE_URL in .env
+# Make sure PostgreSQL is running
+docker compose up -d postgres
+```
+
+**Issue**: Tests fail with database errors
+```bash
+# Solution: Make sure test database is accessible
+# Check DATABASE_URL in test setup
+```
+
+## Resources
+
+- [Fiber Documentation](https://docs.gofiber.io/)
+- [GORM Documentation](https://gorm.io/docs/)
+- [Wire Documentation](https://github.com/google/wire)
+- [OpenAPI Specification](https://swagger.io/specification/)
+- [Go Testing Documentation](https://golang.org/pkg/testing/)
+
+## Quick Reference
+
+### Make Commands
+```bash
+make install    # Install dependencies
+make generate   # Generate code from OpenAPI spec
+make build      # Build binary
+make run        # Run server
+make test       # Run tests
+make docker     # Build docker image
+```
+
+### Environment Variables
+```bash
+DATABASE_URL=postgres://user:pass@localhost:5432/dbname?sslmode=disable
+PORT=8080
+```
+
+### File Patterns
+- `*.go` - Go source files
+- `*_test.go` - Test files
+- `*.tmpl` - Template files (if using)
+- `gen.go` / `wire_gen.go` - Generated files (DO NOT EDIT)
+
+---
+
+**Note for AI Agents**: When modifying this codebase:
+1. Always regenerate code after changing OpenAPI specs
+2. Run tests after changes: `make test`
+3. Follow the layered architecture pattern
+4. Don't modify generated files
+5. Write tests for new functionality
+6. Update OpenAPI spec when adding new endpoints
+

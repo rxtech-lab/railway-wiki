@@ -1,0 +1,42 @@
+{
+  "originHash" : "535c201549f185ffd39c1f4c2a12c0e81a5ed9a8c1bd09fd4e98fd7937088f94",
+  "pins" : [
+    {
+      "identity" : "swift-collections",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-collections",
+      "state" : {
+        "revision" : "a0cb0954ecb21e4e31b0070e6ed5674e8556685a",
+        "version" : "1.6.0"
+      }
+    },
+    {
+      "identity" : "swift-json-schema",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sirily11/swift-json-schema",
+      "state" : {
+        "revision" : "663afab8c131151950fd7fb114871c02a529a4b4",
+        "version" : "1.0.2"
+      }
+    },
+    {
+      "identity" : "swift-jsonschema-form",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sirily11/swift-jsonschema-form.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "ef60305109d6b7ac95a34083bf0f4fe3381ed458"
+      }
+    },
+    {
+      "identity" : "swift-log",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-log.git",
+      "state" : {
+        "revision" : "a878e7f8f46cfc0e1125e565b5c08e7d5272dc9a",
+        "version" : "1.14.0"
+      }
+    }
+  ],
+  "version" : 3
+}

@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		DF98EABA3002753300BBB638 /* JSONSchemaForm in Frameworks */ = {isa = PBXBuildFile; productRef = DF98EAB93002753300BBB638 /* JSONSchemaForm */; };
+		DF98EABC3002753300BBB638 /* JSONSchemaValidator in Frameworks */ = {isa = PBXBuildFile; productRef = DF98EABB3002753300BBB638 /* JSONSchemaValidator */; };
+		DF98EABF3002756500BBB638 /* RxAuthSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DF98EABE3002756500BBB638 /* RxAuthSwift */; };
+		DF98EAC13002756500BBB638 /* RxAuthSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = DF98EAC03002756500BBB638 /* RxAuthSwiftUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		DF98EA8A300265BD00BBB638 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +59,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DF98EAC13002756500BBB638 /* RxAuthSwiftUI in Frameworks */,
+				DF98EABC3002753300BBB638 /* JSONSchemaValidator in Frameworks */,
+				DF98EABF3002756500BBB638 /* RxAuthSwift in Frameworks */,
+				DF98EABA3002753300BBB638 /* JSONSchemaForm in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +123,10 @@
 			);
 			name = iOS;
 			packageProductDependencies = (
+				DF98EAB93002753300BBB638 /* JSONSchemaForm */,
+				DF98EABB3002753300BBB638 /* JSONSchemaValidator */,
+				DF98EABE3002756500BBB638 /* RxAuthSwift */,
+				DF98EAC03002756500BBB638 /* RxAuthSwiftUI */,
 			);
 			productName = iOS;
 			productReference = DF98EA7A300265BC00BBB638 /* iOS.app */;
@@ -195,6 +210,10 @@
 			);
 			mainGroup = DF98EA71300265BC00BBB638;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				DF98EAB83002753300BBB638 /* XCRemoteSwiftPackageReference "swift-jsonschema-form" */,
+				DF98EABD3002756500BBB638 /* XCLocalSwiftPackageReference "../../RxAuthSwift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DF98EA7B300265BC00BBB638 /* Products */;
 			projectDirPath = "";
@@ -615,6 +634,45 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		DF98EABD3002756500BBB638 /* XCLocalSwiftPackageReference "../../RxAuthSwift" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../RxAuthSwift;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		DF98EAB83002753300BBB638 /* XCRemoteSwiftPackageReference "swift-jsonschema-form" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sirily11/swift-jsonschema-form.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DF98EAB93002753300BBB638 /* JSONSchemaForm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DF98EAB83002753300BBB638 /* XCRemoteSwiftPackageReference "swift-jsonschema-form" */;
+			productName = JSONSchemaForm;
+		};
+		DF98EABB3002753300BBB638 /* JSONSchemaValidator */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DF98EAB83002753300BBB638 /* XCRemoteSwiftPackageReference "swift-jsonschema-form" */;
+			productName = JSONSchemaValidator;
+		};
+		DF98EABE3002756500BBB638 /* RxAuthSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RxAuthSwift;
+		};
+		DF98EAC03002756500BBB638 /* RxAuthSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RxAuthSwiftUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DF98EA72300265BC00BBB638 /* Project object */;
 }

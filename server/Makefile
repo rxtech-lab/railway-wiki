@@ -49,7 +49,7 @@ test-e2e: e2e-client
 
 
 docker:
-	docker build -t railway-wiki:latest .
+	docker build -f Dockerfile.vercel -t railway-wiki:latest .
 	docker tag railway-wiki:latest railway-wiki:$$(git describe --tags --always 2>/dev/null || echo "dev")
 
 

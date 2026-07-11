@@ -1,34 +1,42 @@
+// Package database wires GORM to a TursoDB (libSQL) / SQLite backend.
 package database
 
 import (
 	"fmt"
 	"log"
+	"strings"
 
-	"github.com/rxtech-lab/railway-wiki/internal/models"
-	"gorm.io/driver/postgres"
+	"github.com/glebarez/sqlite"
+	_ "github.com/tursodatabase/libsql-client-go/libsql" // registers the pure-Go "libsql" database/sql driver
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/rxtech-lab/railway-wiki/internal/models"
 )
 
-// NewConnection creates a new database connection
-func NewConnection(databaseURL string) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+// NewConnection opens a GORM connection.
+//
+// Remote Turso URLs (libsql://…?authToken=…, or ws/wss/http/https) are served by
+// the pure-Go libSQL driver. Anything else (file:…, :memory:, plain paths) uses
+// the embedded modernc SQLite driver, which is convenient for local dev and tests.
+func NewConnection(url string) (*gorm.DB, error) {
+	dialector := dialectorFor(url)
+
+	db, err := gorm.Open(dialector, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Configure connection pool
+	// SQLite/libSQL is single-writer; keep the pool tight to avoid "database is
+	// locked" errors under concurrent writes.
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
 	}
+	sqlDB.SetMaxOpenConns(1)
 
-	sqlDB.SetMaxOpenConns(10)
-	sqlDB.SetMaxIdleConns(5)
-
-	// Run migrations
 	if err := Migrate(db); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
@@ -36,17 +44,29 @@ func NewConnection(databaseURL string) (*gorm.DB, error) {
 	return db, nil
 }
 
-// Migrate runs database migrations
+// dialectorFor picks the right driver based on the URL scheme.
+func dialectorFor(url string) gorm.Dialector {
+	if isRemoteLibSQL(url) {
+		return sqlite.Dialector{DriverName: "libsql", DSN: url}
+	}
+	return sqlite.Open(url)
+}
+
+func isRemoteLibSQL(url string) bool {
+	for _, p := range []string{"libsql://", "wss://", "ws://", "https://", "http://"} {
+		if strings.HasPrefix(url, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// Migrate runs GORM AutoMigrate for every model.
 func Migrate(db *gorm.DB) error {
 	log.Println("Running database migrations...")
-
-	err := db.AutoMigrate(
-		&models.Example{},
-	)
-	if err != nil {
+	if err := db.AutoMigrate(models.AllModels...); err != nil {
 		return fmt.Errorf("failed to auto migrate: %w", err)
 	}
-
 	log.Println("Database migrations completed successfully")
 	return nil
 }

@@ -1,0 +1,66 @@
+name: E2E
+
+on: push
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      # Server / DB. Management auth (OAuth/JWKS) is provided by the e2e harness,
+      # which self-hosts a JWKS and mints its own access tokens.
+      DATABASE_URL: file:/tmp/railway-e2e.db
+      # MinIO (S3-compatible) — matches docker-compose.yaml
+      S3_ENDPOINT: http://localhost:9000
+      S3_BUCKET: railway-wiki
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_PATH_STYLE: "true"
+      S3_PUBLIC_URL: http://localhost:9000/railway-wiki
+      S3_PRESIGN_TTL: 15m
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+
+      # Bring up MinIO + create the media bucket (docker compose is preinstalled
+      # on ubuntu-latest runners).
+      - name: Start MinIO
+        run: docker compose up -d minio createbuckets
+
+      - name: Wait for MinIO
+        run: |
+          echo "Waiting for MinIO to be ready..."
+          timeout=60
+          until curl -sf http://localhost:9000/minio/health/ready >/dev/null 2>&1 || [ $timeout -le 0 ]; do
+            sleep 1
+            timeout=$((timeout-1))
+          done
+          if [ $timeout -le 0 ]; then
+            echo "MinIO did not become ready"
+            docker compose logs minio createbuckets
+            exit 1
+          fi
+          echo "MinIO is ready!"
+
+      - name: Install tools
+        run: make install
+
+      # Regenerate the e2e client so CI fails if it has drifted from the spec.
+      - name: Generate e2e client
+        run: make e2e-client
+
+      # Build up front to surface compile errors before the harness does.
+      - name: Build server
+        run: go build ./cmd/server
+
+      - name: Run e2e tests
+        run: go test -tags e2e -count=1 -v ./e2e-tests/...
+
+      - name: Dump MinIO logs on failure
+        if: failure()
+        run: docker compose logs minio createbuckets

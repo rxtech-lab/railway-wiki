@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/HEAD/configuration-schema.json
+#
+# Generates a typed HTTP client for the e2e suite from the same source of truth
+# (api/openapi.yaml) the server is generated from. Regenerate with
+# `make e2e-client` (or `go generate ./e2e-tests/client/...`) whenever the spec
+# changes so the client stays in sync.
+package: client
+output: client.gen.go
+generate:
+  models: true
+  client: true
+output-options:
+  skip-prune: true

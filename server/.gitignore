@@ -34,6 +34,7 @@ Thumbs.db
 # Generated files
 internal/api/gen.go
 **/wire_gen.go
+e2e-tests/client/client.gen.go
 
 # Debug
 __debug*

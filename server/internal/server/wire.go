@@ -4,18 +4,21 @@
 package server
 
 import (
-	"github.com/rxtech-lab/railway-wiki/internal/api"
-	"github.com/rxtech-lab/railway-wiki/internal/service"
 	"github.com/google/wire"
 	"gorm.io/gorm"
+
+	"github.com/rxtech-lab/railway-wiki/internal/config"
+	"github.com/rxtech-lab/railway-wiki/internal/schema"
 )
 
-// InitializeServer creates a new server with all dependencies injected
-func InitializeServer(db *gorm.DB) (api.StrictServerInterface, error) {
+// InitializeServer wires the strict server together from config + db.
+// The management authenticator is built separately (server.ProvideAuthenticator)
+// because it is used as Fiber middleware rather than injected into the Server.
+func InitializeServer(cfg *config.Config, db *gorm.DB) (*Server, error) {
 	wire.Build(
-		service.NewExampleService,
+		ProvidePresigner,
+		schema.NewRegistry,
 		NewServer,
-		wire.Bind(new(api.StrictServerInterface), new(*Server)),
 	)
 	return nil, nil
 }

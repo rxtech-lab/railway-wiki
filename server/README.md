@@ -1,14 +1,21 @@
 # railway-wiki
 
-Go server built with Fiber, GORM, and Wire.
+Go server built with Fiber, GORM, and Wire, backed by **TursoDB (libSQL)**.
+
+The API (see `api/openapi.yaml`) exposes public read-only endpoints under
+`/api/{resource}` and bearer-protected management CRUD under
+`/api/management/{resource}` for 22 railway domain resources (companies,
+stations, routes, trains, timetables, media, …). Management access requires role
+`admin`. List endpoints use opaque
+cursor pagination (`{ items, pagination: { next } }`); errors are `{ error, code }`.
 
 ## Getting Started
 
 ### Prerequisites
 
 - Go 1.24 or higher
-- PostgreSQL database
-- Docker (optional, for running postgres via docker-compose)
+- A TursoDB/libSQL database (or a local SQLite file for development)
+- Docker (optional, for localstack S3 when testing media uploads)
 
 ### Environment Setup
 
@@ -17,10 +24,17 @@ Go server built with Fiber, GORM, and Wire.
 cp .env.example .env
 ```
 
-2. Update the `.env` file with your configuration:
+2. Update the `.env` file with your configuration (see `.env.example` for all
+   options — database, management auth, and S3 media storage):
 ```env
-DATABASE_URL=postgres://user:password@localhost:5432/dbname?sslmode=disable
+# Local SQLite file (dev) or a remote Turso URL:
+#   DATABASE_URL=libsql://<db>-<org>.turso.io?authToken=<token>
+DATABASE_URL=file:railway.db
 PORT=8080
+
+# Management endpoints require an OAuth/OIDC JWT access token (role=admin).
+# The JWKS is discovered from the issuer via OIDC discovery:
+OAUTH_ISSUER=https://issuer.example.com/
 ```
 
 ### Installation
@@ -79,10 +93,23 @@ The API is documented using OpenAPI 3.0. View the specification at:
 
 ### Available Endpoints
 
-- `GET /health` - Health check endpoint
-- `GET /api/v1/examples` - List all examples
-- `POST /api/v1/examples` - Create a new example
-- `GET /api/v1/examples/{id}` - Get an example by ID
+- `GET /health` - Health check
+- `GET /api/{resource}` - Public, cursor-paginated list (supports `cursor`, `limit`, filters, `q`)
+- `GET /api/{resource}/{id}` - Public get by id
+- `GET /api/management/{resource}` - Management list (requires an admin bearer token)
+- `POST /api/management/{resource}` - Create
+- `GET /api/management/{resource}/{id}` - Get by id
+- `PUT /api/management/{resource}/{id}` - Replace
+- `DELETE /api/management/{resource}/{id}` - Delete
+- `GET /api/management/{resource}/schema?action=create|update` - JSON Schema for the request body
+- `POST /api/management/media/upload-url` - Presigned media upload target
+
+Resources: `companies`, `stations`, `station-codes`, `station-transfers`,
+`platforms`, `routes`, `route-companies`, `route-stations`, `track-segments`,
+`platform-tracks`, `operation-routes`, `operation-route-companies`,
+`operation-route-sections`, `operation-route-stops`, `timetable-versions`,
+`service-calendars`, `service-calendar-exceptions`, `trains`, `train-runs`,
+`train-run-stops`, `media`, `media-attachments`.
 
 ### Project Structure
 
@@ -133,4 +160,3 @@ make docker
 ## License
 
 Add your license information here.
-

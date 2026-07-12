@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/rxtech-lab/railway-wiki/internal/api"
+	"github.com/rxtech-lab/railway-wiki/internal/overpass"
 	"github.com/rxtech-lab/railway-wiki/internal/repo"
 )
 
@@ -34,6 +35,14 @@ func ErrorMiddleware(f api.StrictHandlerFunc, operationID string) api.StrictHand
 			status, code = fiber.StatusBadRequest, "bad_cursor"
 		case errors.Is(err, repo.ErrBadRequest):
 			status, code = fiber.StatusBadRequest, "bad_request"
+		case errors.Is(err, overpass.ErrBadRequest):
+			status, code = fiber.StatusBadRequest, "bad_request"
+		case errors.Is(err, overpass.ErrRateLimited):
+			status, code = fiber.StatusTooManyRequests, "rate_limited"
+		case errors.Is(err, overpass.ErrTimeout):
+			status, code = fiber.StatusGatewayTimeout, "overpass_timeout"
+		case errors.Is(err, overpass.ErrUnavailable), errors.Is(err, overpass.ErrTooLarge):
+			status, code = fiber.StatusBadGateway, "overpass_unavailable"
 		}
 
 		if writeErr := c.Status(status).JSON(api.Error{Error: err.Error(), Code: code}); writeErr != nil {

@@ -6,27 +6,29 @@
 //
 
 import SwiftUI
-import SwiftData
 
 @main
-struct iOSApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+struct RailwayWikiApp: App {
+    private let bootstrap: AppBootstrap
 
+    init() {
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let configuration = try AppConfiguration.load()
+            MapNetworkConfigurator.configure(configuration: configuration)
+            bootstrap = .ready(AppDependencies(configuration: configuration))
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            bootstrap = .failed(error.localizedDescription)
         }
-    }()
+    }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(bootstrap: bootstrap)
         }
-        .modelContainer(sharedModelContainer)
     }
+}
+
+enum AppBootstrap {
+    case ready(AppDependencies)
+    case failed(String)
 }

@@ -17,6 +17,7 @@ import (
 func InitializeServer(cfg *config.Config, db *gorm.DB) (*Server, error) {
 	wire.Build(
 		ProvidePresigner,
+		ProvideOverpassClient,
 		schema.NewRegistry,
 		NewServer,
 	)

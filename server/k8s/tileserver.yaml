@@ -1,0 +1,96 @@
+# TileServer GL — serves vector/raster basemap tiles (rendered by MapLibre GL).
+# Read-only at runtime; the initContainer seeds the .mbtiles once per volume.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tileserver
+  labels:
+    app: tileserver
+    app.kubernetes.io/part-of: osm-stack
+spec:
+  # NOTE: with ReadWriteOnce below, keep replicas: 1 (each replica needs its
+  # own volume + download). For >1 replica use an RWX StorageClass and switch
+  # the PVC accessMode to ReadWriteMany so replicas share one .mbtiles.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tileserver
+  template:
+    metadata:
+      labels:
+        app: tileserver
+    spec:
+      initContainers:
+        - name: fetch-tiles
+          image: curlimages/curl:8.11.0
+          # Downloads the tileset only if the volume doesn't already have it.
+          # >>> Replace TILES_URL with your region's .mbtiles (OpenMapTiles /
+          #     Planetiler output). Placeholder points at a generic example. <<<
+          command:
+            - sh
+            - -c
+            - 'test -f /data/tiles.mbtiles || curl -fLo /data/tiles.mbtiles "$TILES_URL"'
+          env:
+            - name: TILES_URL
+              value: "https://example.com/REPLACE_ME/us.mbtiles"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: tileserver
+          image: maptiler/tileserver-gl:v5.1.1
+          # TileServer uses this canonical URL when it writes tile, glyph, and
+          # sprite URLs into JSON responses. Keep every map resource under the
+          # authenticated /maps/ gateway route.
+          env:
+            - name: TILESERVER_PUBLIC_URL
+              value: "https://maps.example.com/maps/"
+          args: ["--file", "/data/tiles.mbtiles", "--public_url", "$(TILESERVER_PUBLIC_URL)"]
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              memory: "1Gi"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: tiles-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tiles-pvc
+  labels:
+    app.kubernetes.io/part-of: osm-stack
+spec:
+  accessModes:
+    - ReadWriteOnce      # -> ReadWriteMany if sharing across replicas
+  resources:
+    requests:
+      storage: 20Gi      # city: a few Gi; country: tens of Gi; planet: 100Gi+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tileserver
+  labels:
+    app: tileserver
+    app.kubernetes.io/part-of: osm-stack
+spec:
+  selector:
+    app: tileserver
+  ports:
+    - port: 8080
+      targetPort: 8080

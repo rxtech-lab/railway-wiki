@@ -23,6 +23,11 @@ generate:
 run:
 	go run cmd/server/main.go
 
+# Run the server in E2E mode: local SQLite, management auth DISABLED, sample data
+# seeded on startup. Used for iOS UI tests and manual QA against a real server.
+run-e2e:
+	E2E_MODE=true DATABASE_URL=file:$(CURDIR)/tmp/ios-e2e.db PORT=8080 go run cmd/server/main.go
+
 # Regenerate the e2e HTTP client from api/openapi.yaml. Run after changing the spec.
 e2e-client:
 	go generate ./e2e-tests/client/...

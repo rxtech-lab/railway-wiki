@@ -1,34 +1,36 @@
-//
-//  iOSUITestsLaunchTests.swift
-//  iOSUITests
-//
-//  Created by Qiwei Li on 7/11/26.
-//
-
 import XCTest
 
-final class iOSUITestsLaunchTests: XCTestCase {
+final class RailwayWikiUITestsLaunchTests: XCTestCase {
+    private var server: MockRailwayServer!
 
-    override class var runsForEachTargetApplicationUIConfiguration: Bool {
-        true
-    }
+    override class var runsForEachTargetApplicationUIConfiguration: Bool { true }
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        server = try MockRailwayServer()
+    }
+
+    override func tearDownWithError() throws {
+        server.stop()
+        server = nil
     }
 
     @MainActor
     func testLaunch() throws {
         let app = XCUIApplication()
+        app.launchArguments += [
+            "-E2E_API_BASE_URL", server.baseURL,
+            "-E2E_OVERPASS_API_BASE_URL", "\(server.baseURL)/api/management/overpass",
+            "-E2E_OSM_STACK_BASE_URL", server.baseURL,
+            "-E2E_OSM_MAPS_API_KEY", "launch-fixture-key",
+            "-E2E_AUTH_CLIENT_ID", "launch-fixture-client",
+            "-E2E_AUTH_TOKEN", "launch-fixture-token"
+        ]
         app.launch()
 
-        // Insert steps here to perform after app launch but before taking a screenshot,
-        // such as logging into a test account or navigating somewhere in the app
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
-
+        XCTAssertTrue(app.descendants(matching: .any)["sidebar.dashboard"].waitForExistence(timeout: 5))
         let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "Launch Screen"
+        attachment.name = "Authenticated Launch"
         attachment.lifetime = .keepAlways
         add(attachment)
     }

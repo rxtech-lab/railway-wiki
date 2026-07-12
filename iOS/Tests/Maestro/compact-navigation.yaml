@@ -1,0 +1,33 @@
+appId: app.rxlab.railwaywiki
+name: Compact dashboard and station navigation
+---
+- launchApp:
+    clearState: true
+    arguments:
+      E2E_API_BASE_URL: http://127.0.0.1:18080
+      E2E_OVERPASS_API_BASE_URL: http://127.0.0.1:18080/api/management/overpass
+      E2E_OSM_STACK_BASE_URL: http://127.0.0.1:18080
+      E2E_OSM_MAPS_API_KEY: maestro-maps-only-key
+      E2E_AUTH_CLIENT_ID: maestro-client
+      E2E_AUTH_TOKEN: maestro-admin-token
+- assertVisible:
+    id: sidebar.dashboard
+- tapOn:
+    id: sidebar.dashboard
+- assertVisible:
+    id: dashboard
+- tapOn:
+    id: BackButton
+- scrollUntilVisible:
+    element:
+      id: sidebar.stations
+    direction: DOWN
+- tapOn:
+    id: sidebar.stations
+- assertVisible:
+    id: resource.stations.list
+- tapOn:
+    id: record.station-central
+- assertVisible:
+    id: resource.stations.detail
+- assertVisible: station-central

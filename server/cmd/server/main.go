@@ -34,9 +34,13 @@ func main() {
 	}
 
 	// Build the management authenticator (used as prefix middleware below).
-	authenticator, err := server.ProvideAuthenticator(cfg)
-	if err != nil {
-		log.Fatalf("Failed to initialize authenticator: %v", err)
+	// Skipped entirely in E2E mode, where management auth is disabled.
+	var authenticator auth.Authenticator
+	if !cfg.E2EMode {
+		authenticator, err = server.ProvideAuthenticator(cfg)
+		if err != nil {
+			log.Fatalf("Failed to initialize authenticator: %v", err)
+		}
 	}
 
 	// Wire the strict server (services + schema registry + presigner).
@@ -45,14 +49,24 @@ func main() {
 		log.Fatalf("Failed to initialize server: %v", err)
 	}
 
+	if cfg.E2EMode {
+		log.Println("⚠️  E2E_MODE enabled: management API auth is DISABLED — do not use in production")
+		if err := database.Seed(db); err != nil {
+			log.Fatalf("Failed to seed e2e data: %v", err)
+		}
+	}
+
 	app := fiber.New()
 	app.Use(recover.New())
 	app.Use(logger.New())
 	app.Use(cors.New())
 
 	// Enforce the `admin` role on every management endpoint. Registered before
-	// the strict routes so it runs first for the /api/management prefix.
-	app.Use("/api/management", auth.RequireRole(authenticator, auth.AdminRole))
+	// the strict routes so it runs first for the /api/management prefix. Skipped
+	// in E2E mode so UI tests can drive the API without an OAuth flow.
+	if !cfg.E2EMode {
+		app.Use("/api/management", auth.RequireRole(authenticator, auth.AdminRole))
+	}
 
 	// Register handlers. ErrorMiddleware maps sentinel errors to HTTP statuses.
 	strictHandler := api.NewStrictHandler(strictServer, []api.StrictMiddlewareFunc{server.ErrorMiddleware})

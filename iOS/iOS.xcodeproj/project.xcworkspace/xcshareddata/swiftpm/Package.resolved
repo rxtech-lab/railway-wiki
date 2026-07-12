@@ -1,6 +1,24 @@
 {
-  "originHash" : "535c201549f185ffd39c1f4c2a12c0e81a5ed9a8c1bd09fd4e98fd7937088f94",
+  "originHash" : "3d7911c7bc54ed57cca5ea135e082dd191bc071f579d3b7c7b7a63205090b4c8",
   "pins" : [
+    {
+      "identity" : "maplibre-gl-native-distribution",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/maplibre/maplibre-gl-native-distribution",
+      "state" : {
+        "revision" : "be0696007ca8b350faa0e5968c0d6397d59db415",
+        "version" : "6.26.0"
+      }
+    },
+    {
+      "identity" : "rxauthswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/rxtech-lab/RxAuthSwift",
+      "state" : {
+        "branch" : "main",
+        "revision" : "af111a0fa7bdce6f9b53f4525df73a98d94e764e"
+      }
+    },
     {
       "identity" : "swift-collections",
       "kind" : "remoteSourceControl",
@@ -35,6 +53,15 @@
       "state" : {
         "revision" : "a878e7f8f46cfc0e1125e565b5c08e7d5272dc9a",
         "version" : "1.14.0"
+      }
+    },
+    {
+      "identity" : "swiftlintplugins",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SimplyDanny/SwiftLintPlugins",
+      "state" : {
+        "revision" : "3292bab28e6e92000161348003fdef8edc4e582d",
+        "version" : "0.65.0"
       }
     }
   ],

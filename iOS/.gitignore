@@ -1,0 +1,6 @@
+Config/Secrets.Debug.xcconfig
+Config/Secrets.Release.xcconfig
+DerivedData/
+build/
+__pycache__/
+*.pyc

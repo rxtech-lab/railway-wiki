@@ -49,15 +49,18 @@ func (Company) TableName() string { return "companies" }
 // Station - a physical station.
 type Station struct {
 	Base
-	Name          string `gorm:"not null"`
-	NameEn        *string
-	StationNumber *string
-	Description   *string
-	Latitude      *float64
-	Longitude     *float64
-	AreaGeo       datatypes.JSON
-	OpenedAt      *time.Time
-	ClosedAt      *time.Time
+	Name           string `gorm:"not null"`
+	NameEn         *string
+	StationNumber  *string
+	Description    *string
+	Latitude       *float64
+	Longitude      *float64
+	AreaGeo        datatypes.JSON
+	OpenedAt       *time.Time
+	ClosedAt       *time.Time
+	OsmElementType *string        `gorm:"index:idx_stations_osm_identity,unique"`
+	OsmElementId   *int64         `gorm:"index:idx_stations_osm_identity,unique"`
+	OsmTags        datatypes.JSON `gorm:"type:json"`
 }
 
 func (Station) TableName() string { return "stations" }

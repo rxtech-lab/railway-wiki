@@ -42,3 +42,6 @@ __debug*
 # Temporary files
 tmp/
 temp/
+
+# Kubernetes secrets (real API keys — never commit)
+k8s/secrets.yaml

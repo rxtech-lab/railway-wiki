@@ -1,0 +1,29 @@
+# Public entry point -> gateway (which enforces the API key).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: maps
+  labels:
+    app.kubernetes.io/part-of: osm-stack
+  annotations:
+    # Overpass queries can run long — match the gateway's 180s.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    # Overpass POST bodies (large queries) — raise the limit.
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: nginx          # match your cluster's ingress controller
+  tls:
+    - hosts:
+        - maps.example.com         # >>> your domain
+      secretName: maps-tls         # cert (e.g. cert-manager). Remove tls: for plain HTTP.
+  rules:
+    - host: maps.example.com       # >>> your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 80

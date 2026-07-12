@@ -16,6 +16,7 @@ import (
 	"github.com/rxtech-lab/railway-wiki/internal/convert"
 	"github.com/rxtech-lab/railway-wiki/internal/media"
 	"github.com/rxtech-lab/railway-wiki/internal/models"
+	"github.com/rxtech-lab/railway-wiki/internal/overpass"
 	"github.com/rxtech-lab/railway-wiki/internal/repo"
 	"github.com/rxtech-lab/railway-wiki/internal/schema"
 	"github.com/rxtech-lab/railway-wiki/internal/service"
@@ -51,8 +52,10 @@ type svcMediaAttachment = *service.Service[models.MediaAttachment, *models.Media
 
 // Server holds every resource service plus infra dependencies.
 type Server struct {
+	db                        *gorm.DB
 	schemas                   *schema.Registry
 	presign                   media.Presigner
+	overpass                  overpass.Client
 	companies                 svcCompany
 	stations                  svcStation
 	stationCodes              svcStationCode
@@ -78,10 +81,12 @@ type Server struct {
 }
 
 // NewServer builds the Server, constructing all resource services from db.
-func NewServer(db *gorm.DB, presign media.Presigner, schemas *schema.Registry) *Server {
+func NewServer(db *gorm.DB, presign media.Presigner, schemas *schema.Registry, overpassClient overpass.Client) *Server {
 	return &Server{
+		db:                        db,
 		schemas:                   schemas,
 		presign:                   presign,
+		overpass:                  overpassClient,
 		companies:                 service.New(repo.New[models.Company](db, "name", "short_name"), convert.CompanyToAPI, convert.CompanyFromCreate, convert.CompanyApplyUpdate),
 		stations:                  service.New(repo.New[models.Station](db, "name", "name_en"), convert.StationToAPI, convert.StationFromCreate, convert.StationApplyUpdate),
 		stationCodes:              service.New(repo.New[models.StationCode](db), convert.StationCodeToAPI, convert.StationCodeFromCreate, convert.StationCodeApplyUpdate),
@@ -199,7 +204,7 @@ func (s *Server) AdminGetCompanySchema(ctx context.Context, r api.AdminGetCompan
 // --- Station ---
 
 func (s *Server) ListStations(ctx context.Context, r api.ListStationsRequestObject) (api.ListStationsResponseObject, error) {
-	items, next, err := s.stations.List(ctx, repo.Filter{Q: r.Params.Q, Cursor: r.Params.Cursor, Limit: r.Params.Limit})
+	items, next, err := s.stations.List(ctx, repo.Filter{Q: r.Params.Q, South: r.Params.South, West: r.Params.West, North: r.Params.North, East: r.Params.East, Cursor: r.Params.Cursor, Limit: r.Params.Limit})
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +220,7 @@ func (s *Server) GetStation(ctx context.Context, r api.GetStationRequestObject) 
 }
 
 func (s *Server) AdminListStations(ctx context.Context, r api.AdminListStationsRequestObject) (api.AdminListStationsResponseObject, error) {
-	items, next, err := s.stations.List(ctx, repo.Filter{Q: r.Params.Q, Cursor: r.Params.Cursor, Limit: r.Params.Limit})
+	items, next, err := s.stations.List(ctx, repo.Filter{Q: r.Params.Q, South: r.Params.South, West: r.Params.West, North: r.Params.North, East: r.Params.East, Cursor: r.Params.Cursor, Limit: r.Params.Limit})
 	if err != nil {
 		return nil, err
 	}

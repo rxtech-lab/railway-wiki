@@ -84,9 +84,9 @@ func (p *oauthProvider) jwks() map[string]any {
 // token mints a signed access token for the given subject and role.
 func (p *oauthProvider) token(subject, role string) (string, error) {
 	tok := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		"sub":  subject,
-		"role": role,
-		"iss":  p.issuer,
+		"sub":   subject,
+		"roles": []string{role},
+		"iss":   p.issuer,
 	})
 	tok.Header["kid"] = p.kid
 	signed, err := tok.SignedString(p.key)

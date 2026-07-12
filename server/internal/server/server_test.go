@@ -15,6 +15,7 @@ import (
 	"github.com/rxtech-lab/railway-wiki/internal/api"
 	"github.com/rxtech-lab/railway-wiki/internal/auth"
 	"github.com/rxtech-lab/railway-wiki/internal/media"
+	"github.com/rxtech-lab/railway-wiki/internal/overpass"
 	"github.com/rxtech-lab/railway-wiki/internal/schema"
 	"github.com/rxtech-lab/railway-wiki/internal/server"
 	"github.com/rxtech-lab/railway-wiki/internal/testutil"
@@ -27,11 +28,21 @@ const testToken = "test-token"
 // management middleware without a real identity provider.
 type testAuthenticator struct{}
 
+type testOverpass struct{}
+
+func (testOverpass) Search(context.Context, overpass.SearchRequest) ([]overpass.Candidate, error) {
+	return nil, overpass.ErrUnavailable
+}
+
+func (testOverpass) Fetch(context.Context, string, int64) (*overpass.Candidate, error) {
+	return nil, overpass.ErrUnavailable
+}
+
 func (testAuthenticator) Authenticate(_ context.Context, token string) (*auth.Principal, error) {
 	if token != testToken {
 		return nil, auth.ErrUnauthorized
 	}
-	return &auth.Principal{Subject: "test", Role: auth.AdminRole}, nil
+	return &auth.Principal{Subject: "test", Roles: []string{auth.AdminRole}}, nil
 }
 
 type ServerTestSuite struct {
@@ -45,7 +56,7 @@ func (s *ServerTestSuite) SetupTest() {
 	reg, err := schema.NewRegistry()
 	s.Require().NoError(err)
 
-	srv := server.NewServer(s.DB, media.NoopPresigner{}, reg)
+	srv := server.NewServer(s.DB, media.NoopPresigner{}, reg, testOverpass{})
 
 	app := fiber.New()
 	app.Use("/api/management", auth.RequireRole(testAuthenticator{}, auth.AdminRole))

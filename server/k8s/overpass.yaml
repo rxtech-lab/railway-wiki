@@ -1,0 +1,91 @@
+# Overpass API — serves OSM feature queries (Overpass QL). Genuinely stateful:
+# owns a large DB it keeps updating from diffs, so StatefulSet + replicas: 1.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: overpass
+  labels:
+    app: overpass
+    app.kubernetes.io/part-of: osm-stack
+spec:
+  serviceName: overpass
+  replicas: 1                     # the DB is not multi-writer safe — keep at 1
+  selector:
+    matchLabels:
+      app: overpass
+  template:
+    metadata:
+      labels:
+        app: overpass
+    spec:
+      containers:
+        - name: overpass
+          image: wiktorn/overpass-api:latest
+          env:
+            - name: OVERPASS_META
+              value: "yes"
+            # First boot imports the region (minutes for a city, HOURS for a
+            # country). AFTER the first successful import, change this to
+            # "clone" (or rely on the persisted volume) so a pod restart does
+            # NOT re-import from scratch.
+            - name: OVERPASS_MODE
+              value: "init"
+            # >>> Swap these two URLs for your coverage region (geofabrik.de).
+            #     Planet URL = the .osm.bz2 extract; Diff URL = its updates dir. <<<
+            - name: OVERPASS_PLANET_URL
+              value: "https://download.geofabrik.de/north-america/us-latest.osm.bz2"
+            - name: OVERPASS_DIFF_URL
+              value: "https://download.geofabrik.de/north-america/us-updates/"
+            - name: OVERPASS_RULES_LOAD
+              value: "10"
+            - name: OVERPASS_UPDATE_SLEEP
+              value: "3600"       # apply diffs hourly
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: db
+              mountPath: /db
+          # The first import is a long batch job. startupProbe gives it up to
+          # ~6h (72 * 300s) before liveness kicks in, so it isn't killed mid-import.
+          # Shrink failureThreshold for small (city) regions.
+          startupProbe:
+            httpGet:
+              path: /api/interpreter?data=[out:json];out;
+              port: 80
+            periodSeconds: 300
+            failureThreshold: 72
+          livenessProbe:
+            httpGet:
+              path: /api/interpreter?data=[out:json];out;
+              port: 80
+            periodSeconds: 60
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "1"
+              memory: "4Gi"       # country-scale import is RAM-hungry
+            limits:
+              memory: "8Gi"
+  volumeClaimTemplates:
+    - metadata:
+        name: db
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi        # city: a few Gi; US: tens of Gi; planet: 500Gi+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: overpass
+  labels:
+    app: overpass
+    app.kubernetes.io/part-of: osm-stack
+spec:
+  selector:
+    app: overpass
+  ports:
+    - port: 80
+      targetPort: 80

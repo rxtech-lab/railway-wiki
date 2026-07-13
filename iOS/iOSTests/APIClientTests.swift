@@ -126,6 +126,42 @@ final class APIClientTests: XCTestCase {
         XCTAssertTrue(auth.hasLostAdminAccess)
     }
 
+    func testImportCandidateSendsEmptyJSONObjectWithoutOverrides() async throws {
+        StubURLProtocol.install { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.url?.path, "/api/management/overpass/stations/node/9824199724/import")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
+            let body = try request.bodyData()
+            let object = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertTrue(object.isEmpty)
+            return try StubURLProtocol.response(
+                for: request,
+                status: 201,
+                json: #"{"id":"station-1","name":"Wong Chuk Hang San Wai"}"#
+            )
+        }
+        let client = try makeClient()
+        let candidate = OverpassCandidate(
+            elementType: "node",
+            elementId: 9_824_199_724,
+            name: "Wong Chuk Hang San Wai",
+            nameEn: nil,
+            ref: nil,
+            railway: "tram_stop",
+            mode: "tram_stop",
+            operatorName: nil,
+            network: nil,
+            latitude: 22.247,
+            longitude: 114.178,
+            tags: ["railway": "tram_stop"],
+            importedStationId: nil
+        )
+
+        let station = try await client.importCandidate(candidate)
+
+        XCTAssertEqual(station.stableID, "station-1")
+    }
+
     func testAtomicRouteBodyUsesArrayOrderAndEditableRouteFields() async throws {
         StubURLProtocol.install { request in
             XCTAssertEqual(request.httpMethod, "POST")
@@ -198,6 +234,51 @@ final class APIClientTests: XCTestCase {
 
         XCTAssertEqual(publicURL.absoluteString, "https://cdn.example.test/object")
         XCTAssertEqual(lock.performLocked { requestCount }, 2)
+    }
+
+    func testListMediaAttachmentsFiltersByEntity() async throws {
+        StubURLProtocol.install { request in
+            let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
+            XCTAssertEqual(request.url?.path, "/root/api/management/media-attachments")
+            XCTAssertEqual(components.queryItems?.map(\.name), ["limit", "entityId", "entityType"])
+            XCTAssertEqual(components.queryItems?.first(where: { $0.name == "entityType" })?.value, "station")
+            XCTAssertEqual(components.queryItems?.first(where: { $0.name == "entityId" })?.value, "station-9")
+            return try StubURLProtocol.response(
+                for: request,
+                json: #"{"items":[],"pagination":{"next":null}}"#
+            )
+        }
+        let client = try makeClient()
+        let attachments = try XCTUnwrap(ResourceDefinition.all.first { $0.id == "media-attachments" })
+
+        _ = try await client.list(attachments, filters: ["entityType": "station", "entityId": "station-9"])
+    }
+
+    func testEntityPhotoAttachCreatesMediaAttachmentJoin() async throws {
+        StubURLProtocol.install { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.url?.path, "/root/api/management/media-attachments")
+            let body = try request.bodyData()
+            let object = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(object["mediaId"] as? String, "media-1")
+            XCTAssertEqual(object["entityType"] as? String, "station")
+            XCTAssertEqual(object["entityId"] as? String, "station-9")
+            XCTAssertEqual(object["sortOrder"] as? Int, 0)
+            return try StubURLProtocol.response(
+                for: request,
+                status: 201,
+                json: #"{"id":"attachment-1","mediaId":"media-1","entityType":"station","entityId":"station-9"}"#
+            )
+        }
+        let client = try makeClient()
+
+        try await EntityPhotosSection.attach(
+            media: TestFixtures.record(id: "media-1", name: "photo.jpg"),
+            entityType: "station",
+            entityId: "station-9",
+            sortOrder: 0,
+            api: client
+        )
     }
 
     private func makeClient() throws -> APIClient {

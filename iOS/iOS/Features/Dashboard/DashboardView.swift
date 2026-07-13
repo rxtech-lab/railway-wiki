@@ -28,6 +28,7 @@ private final class DashboardStore {
 struct DashboardView: View {
     @Environment(AppDependencies.self) private var dependencies
     @State private var store = DashboardStore()
+    @State private var selectedMapStation: ResourceRecord?
 
     var body: some View {
         ScrollView {
@@ -62,6 +63,9 @@ struct DashboardView: View {
         }
         .modifier(LoadingOverlay(visible: store.isLoading))
         .task { if store.snapshot == nil { await store.load(api: dependencies.api) } }
+        .sheet(item: $selectedMapStation) { station in
+            SavedStationMapSheet(station: station)
+        }
         .accessibilityIdentifier("dashboard")
     }
 
@@ -79,7 +83,7 @@ struct DashboardView: View {
             initialBounds: nil,
             onBoundsChanged: { _ in },
             onMapTap: { _, _ in },
-            onCandidateTap: { _ in },
+            onCandidateTap: { _, _ in },
             onSavedStationTap: openStation
         )
         .frame(height: 260)
@@ -88,9 +92,7 @@ struct DashboardView: View {
     }
 
     private func openStation(_ id: String) {
-        guard let station = store.stations.first(where: { $0.stableID == id }) else { return }
-        dependencies.navigation.select(.resource("stations"))
-        dependencies.navigation.select(station)
+        selectedMapStation = store.stations.first { $0.stableID == id }
     }
 
     private func coverageCard(_ coverage: DashboardStationCoverage) -> some View {

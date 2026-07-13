@@ -58,7 +58,9 @@ final class MapStore {
         await search(api: api) { try await api.overpassSearch(latitude: latitude, longitude: longitude) }
     }
 
-    func importCandidate(_ candidate: OverpassCandidate, api: APIClient) async {
+    @discardableResult
+    func importCandidate(_ candidate: OverpassCandidate, api: APIClient) async -> Bool {
+        let selectedCandidateID = selectedCandidate?.id
         do {
             let station = try await api.importCandidate(candidate)
             candidates = candidates.map { item in
@@ -66,10 +68,14 @@ final class MapStore {
                 if item.id == candidate.id { item.importedStationId = station.stableID }
                 return item
             }
-            selectedCandidate = candidates.first { $0.id == candidate.id }
+            if selectedCandidateID == candidate.id {
+                selectedCandidate = candidates.first { $0.id == candidate.id }
+            }
             await loadSaved(api: api)
+            return true
         } catch {
             errorMessage = error.localizedDescription
+            return false
         }
     }
 

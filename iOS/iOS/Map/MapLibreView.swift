@@ -13,11 +13,14 @@ struct MapLibreView: UIViewRepresentable {
     let savedStations: [ResourceRecord]
     let candidates: [OverpassCandidate]
     var focus: MapCoordinate?
+    var focusRequestID = 0
     var initialBounds: MapBounds?
+    var cameraPadding: UIEdgeInsets = .zero
     var showsUserLocation = false
     let onBoundsChanged: (MapBounds) -> Void
+    var onCameraInteraction: (() -> Void)?
     let onMapTap: ((Double, Double) -> Void)?
-    let onCandidateTap: (OverpassCandidate) -> Void
+    let onCandidateTap: (OverpassCandidate, CGPoint) -> Void
     let onSavedStationTap: (String) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
@@ -26,6 +29,8 @@ struct MapLibreView: UIViewRepresentable {
         MapNetworkConfigurator.configure(configuration: configuration)
         let mapView = MLNMapView(frame: .zero, styleURL: configuration.mapStyleURL)
         mapView.delegate = context.coordinator
+        mapView.automaticallyAdjustsContentInset = false
+        mapView.contentInset = cameraPadding
         mapView.showsUserLocation = showsUserLocation
         mapView.logoView.isHidden = false
         mapView.attributionButton.isHidden = false
@@ -44,6 +49,7 @@ struct MapLibreView: UIViewRepresentable {
         }
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleMapTap(_:)))
         tap.cancelsTouchesInView = false
+        tap.delegate = context.coordinator
         mapView.addGestureRecognizer(tap)
         context.coordinator.mapView = mapView
         return mapView
@@ -51,17 +57,21 @@ struct MapLibreView: UIViewRepresentable {
 
     func updateUIView(_ mapView: MLNMapView, context: Context) {
         context.coordinator.parent = self
-        context.coordinator.updateFocus(focus, on: mapView)
+        if mapView.contentInset != cameraPadding {
+            mapView.contentInset = cameraPadding
+        }
+        context.coordinator.updateFocus(focus, requestID: focusRequestID, on: mapView)
         context.coordinator.updateSavedStations(savedStations, on: mapView)
         context.coordinator.updateCandidates(candidates, on: mapView)
     }
 
-    final class Coordinator: NSObject, MLNMapViewDelegate {
+    final class Coordinator: NSObject, MLNMapViewDelegate, UIGestureRecognizerDelegate {
         var parent: MapLibreView
         weak var mapView: MLNMapView?
         private var styleLoaded = false
         private var candidateAnnotations: [CandidateAnnotation] = []
         private var currentFocus: MapCoordinate?
+        private var currentFocusRequestID = 0
         private var hasFittedSavedStations = false
 
         init(parent: MapLibreView) { self.parent = parent }
@@ -81,32 +91,79 @@ struct MapLibreView: UIViewRepresentable {
             ))
         }
 
+        func mapView(_ mapView: MLNMapView, regionWillChangeAnimated animated: Bool) {
+            let isUserInteraction = mapView.gestureRecognizers?.contains {
+                $0.state == .began || $0.state == .changed
+            } == true
+            if isUserInteraction {
+                parent.onCameraInteraction?()
+            }
+        }
+
         func mapView(_ mapView: MLNMapView, didSelect annotation: MLNAnnotation) {
             guard let annotation = annotation as? CandidateAnnotation,
                   let candidate = parent.candidates.first(where: { $0.id == annotation.candidateID })
             else { return }
-            parent.onCandidateTap(candidate)
+            let anchor = mapView.convert(annotation.coordinate, toPointTo: mapView)
+            parent.onCandidateTap(candidate, anchor)
         }
 
         func mapView(_ mapView: MLNMapView, viewFor annotation: MLNAnnotation) -> MLNAnnotationView? {
             guard let annotation = annotation as? CandidateAnnotation else { return nil }
             let identifier = "overpass-candidate"
-            let view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
-                ?? MLNAnnotationView(reuseIdentifier: identifier)
-            view.bounds = CGRect(x: 0, y: 0, width: 18, height: 18)
-            view.layer.cornerRadius = 9
-            view.layer.borderWidth = 3
-            view.layer.borderColor = UIColor.white.cgColor
-            view.backgroundColor = .systemOrange
+            let view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? CandidateAnnotationView
+                ?? CandidateAnnotationView(reuseIdentifier: identifier)
+            view.candidateID = annotation.candidateID
+            view.isUserInteractionEnabled = true
+            if !view.hasCandidateTapRecognizer {
+                let tap = UITapGestureRecognizer(
+                    target: self,
+                    action: #selector(handleCandidateAnnotationTap(_:))
+                )
+                tap.cancelsTouchesInView = false
+                tap.delegate = self
+                view.addGestureRecognizer(tap)
+                view.hasCandidateTapRecognizer = true
+            }
             view.isAccessibilityElement = true
             view.accessibilityLabel = annotation.title
             view.accessibilityIdentifier = "map.annotation.\(annotation.candidateID)"
             return view
         }
 
+        @objc func handleCandidateAnnotationTap(_ recognizer: UITapGestureRecognizer) {
+            guard recognizer.state == .ended,
+                  let view = recognizer.view as? CandidateAnnotationView,
+                  let mapView,
+                  let annotation = candidateAnnotations.first(where: { $0.candidateID == view.candidateID }),
+                  let candidate = parent.candidates.first(where: { $0.id == view.candidateID })
+            else { return }
+            let anchor = mapView.convert(annotation.coordinate, toPointTo: mapView)
+            parent.onCandidateTap(candidate, anchor)
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
+        }
+
         @objc func handleMapTap(_ recognizer: UITapGestureRecognizer) {
             guard recognizer.state == .ended, let mapView else { return }
             let point = recognizer.location(in: mapView)
+            let candidateHitArea = CGRect(x: point.x - 22, y: point.y - 22, width: 44, height: 44)
+            if let annotation = mapView.visibleAnnotations(in: candidateHitArea)?
+                .compactMap({ $0 as? CandidateAnnotation })
+                .min(by: {
+                    mapView.convert($0.coordinate, toPointTo: mapView).distance(to: point) <
+                        mapView.convert($1.coordinate, toPointTo: mapView).distance(to: point)
+                }),
+               let candidate = parent.candidates.first(where: { $0.id == annotation.candidateID }) {
+                let anchor = mapView.convert(annotation.coordinate, toPointTo: mapView)
+                parent.onCandidateTap(candidate, anchor)
+                return
+            }
             let features = mapView.visibleFeatures(
                 at: point,
                 styleLayerIdentifiers: ["saved-station-points", "saved-station-clusters"]
@@ -138,9 +195,12 @@ struct MapLibreView: UIViewRepresentable {
             mapView.addAnnotations(candidateAnnotations)
         }
 
-        func updateFocus(_ focus: MapCoordinate?, on mapView: MLNMapView) {
-            guard focus != currentFocus, let focus else { return }
+        func updateFocus(_ focus: MapCoordinate?, requestID: Int, on mapView: MLNMapView) {
+            guard let focus,
+                  focus != currentFocus || requestID != currentFocusRequestID
+            else { return }
             currentFocus = focus
+            currentFocusRequestID = requestID
             mapView.setCenter(.init(latitude: focus.latitude, longitude: focus.longitude), zoomLevel: 13, animated: false)
         }
 
@@ -219,11 +279,37 @@ struct MapLibreView: UIViewRepresentable {
     }
 }
 
+private extension CGPoint {
+    func distance(to other: CGPoint) -> CGFloat {
+        hypot(x - other.x, y - other.y)
+    }
+}
+
 private final class CandidateAnnotation: MLNPointAnnotation {
     let candidateID: String
     init(candidateID: String) {
         self.candidateID = candidateID
         super.init()
     }
+    required init?(coder: NSCoder) { nil }
+}
+
+private final class CandidateAnnotationView: MLNAnnotationView {
+    var candidateID = ""
+    var hasCandidateTapRecognizer = false
+
+    override init(reuseIdentifier: String?) {
+        super.init(reuseIdentifier: reuseIdentifier)
+        bounds = CGRect(x: 0, y: 0, width: 44, height: 44)
+
+        let marker = UIView(frame: CGRect(x: 13, y: 13, width: 18, height: 18))
+        marker.isUserInteractionEnabled = false
+        marker.layer.cornerRadius = 9
+        marker.layer.borderWidth = 3
+        marker.layer.borderColor = UIColor.white.cgColor
+        marker.backgroundColor = .systemOrange
+        addSubview(marker)
+    }
+
     required init?(coder: NSCoder) { nil }
 }

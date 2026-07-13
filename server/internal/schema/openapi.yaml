@@ -5222,43 +5222,49 @@ components:
       required:
       - name
       properties:
-        name:
+        name: &reqCompanyName
           type: string
-        shortName:
+          title: Name
+          description: 'Official company name, e.g. "East Japan Railway Company".'
+        shortName: &reqCompanyShortName
           type: string
-        companyType:
+          title: Short Name
+          description: 'Abbreviated name used in compact displays, e.g. "JR East".'
+        companyType: &reqCompanyCompanyType
           type: string
-        country:
+          title: Company Type
+          description: Category of railway operator.
+          enum: [jr, major_private, semi_major, third_sector, public, monorail, tram, other]
+        country: &reqCompanyCountry
           type: string
-        website:
+          title: Country
+          description: 'Country where the company operates, e.g. "Japan".'
+        website: &reqCompanyWebsite
           type: string
-        validFrom:
+          title: Website
+          description: Official website URL.
+        validFrom: &reqCompanyValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqCompanyValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdateCompanyRequest:
       type: object
       required:
       - name
       properties:
-        name:
-          type: string
-        shortName:
-          type: string
-        companyType:
-          type: string
-        country:
-          type: string
-        website:
-          type: string
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        name: *reqCompanyName
+        shortName: *reqCompanyShortName
+        companyType: *reqCompanyCompanyType
+        country: *reqCompanyCountry
+        website: *reqCompanyWebsite
+        validFrom: *reqCompanyValidFrom
+        validTo: *reqCompanyValidTo
     CompanyPage:
       type: object
       required:
@@ -5324,61 +5330,62 @@ components:
       required:
       - name
       properties:
-        name:
+        name: &reqStationName
           type: string
-        nameEn:
+          title: Name
+          description: Station name in its local language.
+        nameEn: &reqStationNameEn
           type: string
-        stationNumber:
+          title: English Name
+          description: Station name in English, if different from the local name.
+        stationNumber: &reqStationStationNumber
           type: string
-        description:
+          title: Station Number
+          description: 'Station numbering code, e.g. "JY17".'
+        description: &reqStationDescription
           type: string
-        latitude:
+          title: Description
+          description: Free-form notes about the station.
+        latitude: &reqStationLatitude
           type: number
           format: double
-        longitude:
+          title: Latitude
+          description: Latitude in decimal degrees (WGS84).
+        longitude: &reqStationLongitude
           type: number
           format: double
-        areaGeo:
+          title: Longitude
+          description: Longitude in decimal degrees (WGS84).
+        areaGeo: &reqStationAreaGeo
           type: object
           nullable: true
           additionalProperties: true
-          description: GeoJSON geometry object
-        openedAt:
+          title: Area Geometry
+          description: GeoJSON geometry outlining the station area.
+        openedAt: &reqStationOpenedAt
           type: string
           format: date
-        closedAt:
+          title: Opened
+          description: Date the station opened.
+        closedAt: &reqStationClosedAt
           type: string
           format: date
+          title: Closed
+          description: Date the station closed; leave empty if still open.
     UpdateStationRequest:
       type: object
       required:
       - name
       properties:
-        name:
-          type: string
-        nameEn:
-          type: string
-        stationNumber:
-          type: string
-        description:
-          type: string
-        latitude:
-          type: number
-          format: double
-        longitude:
-          type: number
-          format: double
-        areaGeo:
-          type: object
-          nullable: true
-          additionalProperties: true
-          description: GeoJSON geometry object
-        openedAt:
-          type: string
-          format: date
-        closedAt:
-          type: string
-          format: date
+        name: *reqStationName
+        nameEn: *reqStationNameEn
+        stationNumber: *reqStationStationNumber
+        description: *reqStationDescription
+        latitude: *reqStationLatitude
+        longitude: *reqStationLongitude
+        areaGeo: *reqStationAreaGeo
+        openedAt: *reqStationOpenedAt
+        closedAt: *reqStationClosedAt
     StationPage:
       type: object
       required:
@@ -5425,46 +5432,47 @@ components:
       - stationId
       - code
       properties:
-        stationId:
+        stationId: &reqStationCodeStationId
           type: string
           format: uuid
-        routeId:
+          title: Station
+          description: Station this code belongs to.
+        routeId: &reqStationCodeRouteId
           type: string
           format: uuid
-        companyId:
+          title: Route
+          description: Route the code applies to, when route-specific.
+        companyId: &reqStationCodeCompanyId
           type: string
           format: uuid
-        code:
+          title: Company
+          description: Company that assigned the code, when company-specific.
+        code: &reqStationCodeCode
           type: string
-        validFrom:
+          title: Code
+          description: 'The station code, e.g. "JY17".'
+        validFrom: &reqStationCodeValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqStationCodeValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdateStationCodeRequest:
       type: object
       required:
       - stationId
       - code
       properties:
-        stationId:
-          type: string
-          format: uuid
-        routeId:
-          type: string
-          format: uuid
-        companyId:
-          type: string
-          format: uuid
-        code:
-          type: string
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        stationId: *reqStationCodeStationId
+        routeId: *reqStationCodeRouteId
+        companyId: *reqStationCodeCompanyId
+        code: *reqStationCodeCode
+        validFrom: *reqStationCodeValidFrom
+        validTo: *reqStationCodeValidTo
     StationCodePage:
       type: object
       required:
@@ -5506,36 +5514,39 @@ components:
       - fromStationId
       - toStationId
       properties:
-        fromStationId:
+        fromStationId: &reqStationTransferFromStationId
           type: string
           format: uuid
-        toStationId:
+          title: From Station
+          description: Station the transfer starts from.
+        toStationId: &reqStationTransferToStationId
           type: string
           format: uuid
-        transferType:
+          title: To Station
+          description: Station the transfer leads to.
+        transferType: &reqStationTransferTransferType
           type: string
-        walkingMinutes:
+          title: Transfer Type
+          description: Kind of transfer, e.g. in-station walkway or out-of-gate transfer.
+        walkingMinutes: &reqStationTransferWalkingMinutes
           type: integer
-        description:
+          title: Walking Minutes
+          description: Typical walking time between the two stations, in minutes.
+        description: &reqStationTransferDescription
           type: string
+          title: Description
+          description: Free-form notes about the transfer.
     UpdateStationTransferRequest:
       type: object
       required:
       - fromStationId
       - toStationId
       properties:
-        fromStationId:
-          type: string
-          format: uuid
-        toStationId:
-          type: string
-          format: uuid
-        transferType:
-          type: string
-        walkingMinutes:
-          type: integer
-        description:
-          type: string
+        fromStationId: *reqStationTransferFromStationId
+        toStationId: *reqStationTransferToStationId
+        transferType: *reqStationTransferTransferType
+        walkingMinutes: *reqStationTransferWalkingMinutes
+        description: *reqStationTransferDescription
     StationTransferPage:
       type: object
       required:
@@ -5585,55 +5596,56 @@ components:
       required:
       - stationId
       properties:
-        stationId:
+        stationId: &reqPlatformStationId
           type: string
           format: uuid
-        platformNumber:
+          title: Station
+          description: Station this platform belongs to.
+        platformNumber: &reqPlatformPlatformNumber
           type: string
-        name:
+          title: Platform Number
+          description: 'Platform number or letter as signposted, e.g. "3".'
+        name: &reqPlatformName
           type: string
-        platformType:
+          title: Name
+          description: Display name of the platform, if it has one.
+        platformType: &reqPlatformPlatformType
           type: string
-        latitude:
+          title: Platform Type
+          description: Physical layout, e.g. island or side platform.
+        latitude: &reqPlatformLatitude
           type: number
           format: double
-        longitude:
+          title: Latitude
+          description: Latitude in decimal degrees (WGS84).
+        longitude: &reqPlatformLongitude
           type: number
           format: double
-        geo:
+          title: Longitude
+          description: Longitude in decimal degrees (WGS84).
+        geo: &reqPlatformGeo
           type: object
           nullable: true
           additionalProperties: true
-          description: GeoJSON geometry object
-        description:
+          title: Geometry
+          description: GeoJSON geometry of the platform.
+        description: &reqPlatformDescription
           type: string
+          title: Description
+          description: Free-form notes about the platform.
     UpdatePlatformRequest:
       type: object
       required:
       - stationId
       properties:
-        stationId:
-          type: string
-          format: uuid
-        platformNumber:
-          type: string
-        name:
-          type: string
-        platformType:
-          type: string
-        latitude:
-          type: number
-          format: double
-        longitude:
-          type: number
-          format: double
-        geo:
-          type: object
-          nullable: true
-          additionalProperties: true
-          description: GeoJSON geometry object
-        description:
-          type: string
+        stationId: *reqPlatformStationId
+        platformNumber: *reqPlatformPlatformNumber
+        name: *reqPlatformName
+        platformType: *reqPlatformPlatformType
+        latitude: *reqPlatformLatitude
+        longitude: *reqPlatformLongitude
+        geo: *reqPlatformGeo
+        description: *reqPlatformDescription
     PlatformPage:
       type: object
       required:
@@ -5684,57 +5696,60 @@ components:
       required:
       - name
       properties:
-        name:
+        name: &reqRouteName
           type: string
-        nameEn:
+          title: Name
+          description: 'Route (line) name, e.g. "Yamanote Line".'
+        nameEn: &reqRouteNameEn
           type: string
-        description:
+          title: English Name
+          description: Route name in English, if different from the local name.
+        description: &reqRouteDescription
           type: string
-        routeType:
+          title: Description
+          description: Free-form notes about the route.
+        routeType: &reqRouteRouteType
           type: string
-        localType:
+          title: Route Type
+          description: Classification of the route, e.g. conventional, shinkansen, or subway.
+        localType: &reqRouteLocalType
           type: string
-        operationStatus:
+          title: Local Type
+          description: Region-specific classification of the route.
+        operationStatus: &reqRouteOperationStatus
           type: string
-        validFrom:
+          title: Operation Status
+          description: Whether the route is operating, suspended, or abolished.
+        validFrom: &reqRouteValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqRouteValidTo
           type: string
           format: date
-        geo:
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
+        geo: &reqRouteGeo
           type: object
           nullable: true
           additionalProperties: true
-          description: GeoJSON geometry object
+          title: Geometry
+          description: GeoJSON geometry of the route alignment.
     UpdateRouteRequest:
       type: object
       required:
       - name
       properties:
-        name:
-          type: string
-        nameEn:
-          type: string
-        description:
-          type: string
-        routeType:
-          type: string
-        localType:
-          type: string
-        operationStatus:
-          type: string
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
-        geo:
-          type: object
-          nullable: true
-          additionalProperties: true
-          description: GeoJSON geometry object
+        name: *reqRouteName
+        nameEn: *reqRouteNameEn
+        description: *reqRouteDescription
+        routeType: *reqRouteRouteType
+        localType: *reqRouteLocalType
+        operationStatus: *reqRouteOperationStatus
+        validFrom: *reqRouteValidFrom
+        validTo: *reqRouteValidTo
+        geo: *reqRouteGeo
     RoutePage:
       type: object
       required:
@@ -5778,40 +5793,41 @@ components:
       - routeId
       - companyId
       properties:
-        routeId:
+        routeId: &reqRouteCompanyRouteId
           type: string
           format: uuid
-        companyId:
+          title: Route
+          description: Route this relationship applies to.
+        companyId: &reqRouteCompanyCompanyId
           type: string
           format: uuid
-        role:
+          title: Company
+          description: Company involved with the route.
+        role: &reqRouteCompanyRole
           type: string
-        validFrom:
+          title: Role
+          description: The company's role, e.g. operator or track owner.
+        validFrom: &reqRouteCompanyValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqRouteCompanyValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdateRouteCompanyRequest:
       type: object
       required:
       - routeId
       - companyId
       properties:
-        routeId:
-          type: string
-          format: uuid
-        companyId:
-          type: string
-          format: uuid
-        role:
-          type: string
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        routeId: *reqRouteCompanyRouteId
+        companyId: *reqRouteCompanyCompanyId
+        role: *reqRouteCompanyRole
+        validFrom: *reqRouteCompanyValidFrom
+        validTo: *reqRouteCompanyValidTo
     RouteCompanyPage:
       type: object
       required:
@@ -5860,23 +5876,35 @@ components:
       - stationId
       - sequence
       properties:
-        routeId:
+        routeId: &reqRouteStationRouteId
           type: string
           format: uuid
-        stationId:
+          title: Route
+          description: Route the station is part of.
+        stationId: &reqRouteStationStationId
           type: string
           format: uuid
-        sequence:
+          title: Station
+          description: Station on the route.
+        sequence: &reqRouteStationSequence
           type: integer
-        distanceFromStartKm:
+          title: Sequence
+          description: Order of this station along the route, starting at 1.
+        distanceFromStartKm: &reqRouteStationDistanceFromStartKm
           type: number
           format: double
-        validFrom:
+          title: Distance From Start (km)
+          description: Cumulative distance from the route origin, in kilometers.
+        validFrom: &reqRouteStationValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqRouteStationValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdateRouteStationRequest:
       type: object
       required:
@@ -5884,23 +5912,12 @@ components:
       - stationId
       - sequence
       properties:
-        routeId:
-          type: string
-          format: uuid
-        stationId:
-          type: string
-          format: uuid
-        sequence:
-          type: integer
-        distanceFromStartKm:
-          type: number
-          format: double
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        routeId: *reqRouteStationRouteId
+        stationId: *reqRouteStationStationId
+        sequence: *reqRouteStationSequence
+        distanceFromStartKm: *reqRouteStationDistanceFromStartKm
+        validFrom: *reqRouteStationValidFrom
+        validTo: *reqRouteStationValidTo
     RouteStationPage:
       type: object
       required:
@@ -5961,77 +5978,79 @@ components:
       required:
       - routeId
       properties:
-        routeId:
+        routeId: &reqTrackSegmentRouteId
           type: string
           format: uuid
-        fromStationId:
+          title: Route
+          description: Route this track segment belongs to.
+        fromStationId: &reqTrackSegmentFromStationId
           type: string
           format: uuid
-        toStationId:
+          title: From Station
+          description: Station at the start of the segment.
+        toStationId: &reqTrackSegmentToStationId
           type: string
           format: uuid
-        trackNumber:
+          title: To Station
+          description: Station at the end of the segment.
+        trackNumber: &reqTrackSegmentTrackNumber
           type: string
-        trackCount:
+          title: Track Number
+          description: 'Identifier of the track, e.g. "1".'
+        trackCount: &reqTrackSegmentTrackCount
           type: integer
-        distanceKm:
+          title: Track Count
+          description: Number of parallel tracks on this segment.
+        distanceKm: &reqTrackSegmentDistanceKm
           type: number
           format: double
-        gauge:
+          title: Distance (km)
+          description: Length of the segment, in kilometers.
+        gauge: &reqTrackSegmentGauge
           type: string
-        electrification:
+          title: Gauge
+          description: 'Track gauge, e.g. "1067mm".'
+        electrification: &reqTrackSegmentElectrification
           type: string
-        maxSpeedKmh:
+          title: Electrification
+          description: 'Electrification system, e.g. "1500V DC" or "non-electrified".'
+        maxSpeedKmh: &reqTrackSegmentMaxSpeedKmh
           type: integer
-        geo:
+          title: Max Speed (km/h)
+          description: Maximum permitted speed, in km/h.
+        geo: &reqTrackSegmentGeo
           type: object
           nullable: true
           additionalProperties: true
-          description: GeoJSON geometry object
-        validFrom:
+          title: Geometry
+          description: GeoJSON geometry of the track segment.
+        validFrom: &reqTrackSegmentValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqTrackSegmentValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdateTrackSegmentRequest:
       type: object
       required:
       - routeId
       properties:
-        routeId:
-          type: string
-          format: uuid
-        fromStationId:
-          type: string
-          format: uuid
-        toStationId:
-          type: string
-          format: uuid
-        trackNumber:
-          type: string
-        trackCount:
-          type: integer
-        distanceKm:
-          type: number
-          format: double
-        gauge:
-          type: string
-        electrification:
-          type: string
-        maxSpeedKmh:
-          type: integer
-        geo:
-          type: object
-          nullable: true
-          additionalProperties: true
-          description: GeoJSON geometry object
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        routeId: *reqTrackSegmentRouteId
+        fromStationId: *reqTrackSegmentFromStationId
+        toStationId: *reqTrackSegmentToStationId
+        trackNumber: *reqTrackSegmentTrackNumber
+        trackCount: *reqTrackSegmentTrackCount
+        distanceKm: *reqTrackSegmentDistanceKm
+        gauge: *reqTrackSegmentGauge
+        electrification: *reqTrackSegmentElectrification
+        maxSpeedKmh: *reqTrackSegmentMaxSpeedKmh
+        geo: *reqTrackSegmentGeo
+        validFrom: *reqTrackSegmentValidFrom
+        validTo: *reqTrackSegmentValidTo
     TrackSegmentPage:
       type: object
       required:
@@ -6075,40 +6094,41 @@ components:
       - platformId
       - trackSegmentId
       properties:
-        platformId:
+        platformId: &reqPlatformTrackPlatformId
           type: string
           format: uuid
-        trackSegmentId:
+          title: Platform
+          description: Platform served by the track.
+        trackSegmentId: &reqPlatformTrackTrackSegmentId
           type: string
           format: uuid
-        direction:
+          title: Track Segment
+          description: Track segment that passes the platform.
+        direction: &reqPlatformTrackDirection
           type: string
-        validFrom:
+          title: Direction
+          description: Travel direction served, e.g. inbound or outbound.
+        validFrom: &reqPlatformTrackValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqPlatformTrackValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdatePlatformTrackRequest:
       type: object
       required:
       - platformId
       - trackSegmentId
       properties:
-        platformId:
-          type: string
-          format: uuid
-        trackSegmentId:
-          type: string
-          format: uuid
-        direction:
-          type: string
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        platformId: *reqPlatformTrackPlatformId
+        trackSegmentId: *reqPlatformTrackTrackSegmentId
+        direction: *reqPlatformTrackDirection
+        validFrom: *reqPlatformTrackValidFrom
+        validTo: *reqPlatformTrackValidTo
     PlatformTrackPage:
       type: object
       required:
@@ -6158,55 +6178,60 @@ components:
       required:
       - name
       properties:
-        name:
+        name: &reqOperationRouteName
           type: string
-        nameEn:
+          title: Name
+          description: 'Name of the operated service, e.g. "Rapid Airport".'
+        nameEn: &reqOperationRouteNameEn
           type: string
-        description:
+          title: English Name
+          description: Service name in English, if different from the local name.
+        description: &reqOperationRouteDescription
           type: string
-        serviceType:
+          title: Description
+          description: Free-form notes about the operated service.
+        serviceType: &reqOperationRouteServiceType
           type: string
-        localType:
+          title: Service Type
+          description: Service pattern, e.g. local, rapid, or limited express.
+        localType: &reqOperationRouteLocalType
           type: string
-        originStationId:
+          title: Local Type
+          description: Region-specific classification of the service.
+        originStationId: &reqOperationRouteOriginStationId
           type: string
           format: uuid
-        destinationStationId:
+          title: Origin Station
+          description: Station where the service originates.
+        destinationStationId: &reqOperationRouteDestinationStationId
           type: string
           format: uuid
-        validFrom:
+          title: Destination Station
+          description: Station where the service terminates.
+        validFrom: &reqOperationRouteValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqOperationRouteValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdateOperationRouteRequest:
       type: object
       required:
       - name
       properties:
-        name:
-          type: string
-        nameEn:
-          type: string
-        description:
-          type: string
-        serviceType:
-          type: string
-        localType:
-          type: string
-        originStationId:
-          type: string
-          format: uuid
-        destinationStationId:
-          type: string
-          format: uuid
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        name: *reqOperationRouteName
+        nameEn: *reqOperationRouteNameEn
+        description: *reqOperationRouteDescription
+        serviceType: *reqOperationRouteServiceType
+        localType: *reqOperationRouteLocalType
+        originStationId: *reqOperationRouteOriginStationId
+        destinationStationId: *reqOperationRouteDestinationStationId
+        validFrom: *reqOperationRouteValidFrom
+        validTo: *reqOperationRouteValidTo
     OperationRoutePage:
       type: object
       required:
@@ -6250,40 +6275,41 @@ components:
       - operationRouteId
       - companyId
       properties:
-        operationRouteId:
+        operationRouteId: &reqOperationRouteCompanyOperationRouteId
           type: string
           format: uuid
-        companyId:
+          title: Operation Route
+          description: Operated service this relationship applies to.
+        companyId: &reqOperationRouteCompanyCompanyId
           type: string
           format: uuid
-        role:
+          title: Company
+          description: Company involved with the operated service.
+        role: &reqOperationRouteCompanyRole
           type: string
-        validFrom:
+          title: Role
+          description: The company's role, e.g. operator or track owner.
+        validFrom: &reqOperationRouteCompanyValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqOperationRouteCompanyValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdateOperationRouteCompanyRequest:
       type: object
       required:
       - operationRouteId
       - companyId
       properties:
-        operationRouteId:
-          type: string
-          format: uuid
-        companyId:
-          type: string
-          format: uuid
-        role:
-          type: string
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        operationRouteId: *reqOperationRouteCompanyOperationRouteId
+        companyId: *reqOperationRouteCompanyCompanyId
+        role: *reqOperationRouteCompanyRole
+        validFrom: *reqOperationRouteCompanyValidFrom
+        validTo: *reqOperationRouteCompanyValidTo
     OperationRouteCompanyPage:
       type: object
       required:
@@ -6335,26 +6361,40 @@ components:
       - routeId
       - sequence
       properties:
-        operationRouteId:
+        operationRouteId: &reqOperationRouteSectionOperationRouteId
           type: string
           format: uuid
-        routeId:
+          title: Operation Route
+          description: Operated service this section belongs to.
+        routeId: &reqOperationRouteSectionRouteId
           type: string
           format: uuid
-        sequence:
+          title: Route
+          description: Physical route used by this section.
+        sequence: &reqOperationRouteSectionSequence
           type: integer
-        fromStationId:
+          title: Sequence
+          description: Order of this section along the service, starting at 1.
+        fromStationId: &reqOperationRouteSectionFromStationId
           type: string
           format: uuid
-        toStationId:
+          title: From Station
+          description: Station where the section starts.
+        toStationId: &reqOperationRouteSectionToStationId
           type: string
           format: uuid
-        validFrom:
+          title: To Station
+          description: Station where the section ends.
+        validFrom: &reqOperationRouteSectionValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqOperationRouteSectionValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdateOperationRouteSectionRequest:
       type: object
       required:
@@ -6362,26 +6402,13 @@ components:
       - routeId
       - sequence
       properties:
-        operationRouteId:
-          type: string
-          format: uuid
-        routeId:
-          type: string
-          format: uuid
-        sequence:
-          type: integer
-        fromStationId:
-          type: string
-          format: uuid
-        toStationId:
-          type: string
-          format: uuid
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        operationRouteId: *reqOperationRouteSectionOperationRouteId
+        routeId: *reqOperationRouteSectionRouteId
+        sequence: *reqOperationRouteSectionSequence
+        fromStationId: *reqOperationRouteSectionFromStationId
+        toStationId: *reqOperationRouteSectionToStationId
+        validFrom: *reqOperationRouteSectionValidFrom
+        validTo: *reqOperationRouteSectionValidTo
     OperationRouteSectionPage:
       type: object
       required:
@@ -6433,26 +6460,42 @@ components:
       - stationId
       - sequence
       properties:
-        operationRouteId:
+        operationRouteId: &reqOperationRouteStopOperationRouteId
           type: string
           format: uuid
-        stationId:
+          title: Operation Route
+          description: Operated service this stop belongs to.
+        stationId: &reqOperationRouteStopStationId
           type: string
           format: uuid
-        sequence:
+          title: Station
+          description: Station of the stop.
+        sequence: &reqOperationRouteStopSequence
           type: integer
-        defaultStopType:
+          title: Sequence
+          description: Order of this stop along the service, starting at 1.
+        defaultStopType: &reqOperationRouteStopDefaultStopType
           type: string
-        passengerBoarding:
+          title: Default Stop Type
+          description: Default stopping behavior at this station, e.g. stop or pass.
+        passengerBoarding: &reqOperationRouteStopPassengerBoarding
           type: boolean
-        passengerAlighting:
+          title: Passenger Boarding
+          description: Whether passengers may board at this stop.
+        passengerAlighting: &reqOperationRouteStopPassengerAlighting
           type: boolean
-        validFrom:
+          title: Passenger Alighting
+          description: Whether passengers may alight at this stop.
+        validFrom: &reqOperationRouteStopValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqOperationRouteStopValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdateOperationRouteStopRequest:
       type: object
       required:
@@ -6460,26 +6503,14 @@ components:
       - stationId
       - sequence
       properties:
-        operationRouteId:
-          type: string
-          format: uuid
-        stationId:
-          type: string
-          format: uuid
-        sequence:
-          type: integer
-        defaultStopType:
-          type: string
-        passengerBoarding:
-          type: boolean
-        passengerAlighting:
-          type: boolean
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        operationRouteId: *reqOperationRouteStopOperationRouteId
+        stationId: *reqOperationRouteStopStationId
+        sequence: *reqOperationRouteStopSequence
+        defaultStopType: *reqOperationRouteStopDefaultStopType
+        passengerBoarding: *reqOperationRouteStopPassengerBoarding
+        passengerAlighting: *reqOperationRouteStopPassengerAlighting
+        validFrom: *reqOperationRouteStopValidFrom
+        validTo: *reqOperationRouteStopValidTo
     OperationRouteStopPage:
       type: object
       required:
@@ -6525,47 +6556,50 @@ components:
       required:
       - name
       properties:
-        name:
+        name: &reqTimetableVersionName
           type: string
-        description:
+          title: Name
+          description: 'Display name of this timetable version, e.g. "March 2026 revision".'
+        description: &reqTimetableVersionDescription
           type: string
-        companyId:
+          title: Description
+          description: Free-form notes about the timetable version.
+        companyId: &reqTimetableVersionCompanyId
           type: string
           format: uuid
-        validFrom:
+          title: Company
+          description: Company the timetable belongs to.
+        validFrom: &reqTimetableVersionValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqTimetableVersionValidTo
           type: string
           format: date
-        sourceUrl:
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
+        sourceUrl: &reqTimetableVersionSourceUrl
           type: string
-        importedAt:
+          title: Source URL
+          description: URL of the source document for this timetable.
+        importedAt: &reqTimetableVersionImportedAt
           type: string
           format: date-time
+          title: Imported At
+          description: Timestamp when the timetable data was imported.
     UpdateTimetableVersionRequest:
       type: object
       required:
       - name
       properties:
-        name:
-          type: string
-        description:
-          type: string
-        companyId:
-          type: string
-          format: uuid
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
-        sourceUrl:
-          type: string
-        importedAt:
-          type: string
-          format: date-time
+        name: *reqTimetableVersionName
+        description: *reqTimetableVersionDescription
+        companyId: *reqTimetableVersionCompanyId
+        validFrom: *reqTimetableVersionValidFrom
+        validTo: *reqTimetableVersionValidTo
+        sourceUrl: *reqTimetableVersionSourceUrl
+        importedAt: *reqTimetableVersionImportedAt
     TimetableVersionPage:
       type: object
       required:
@@ -6615,55 +6649,63 @@ components:
       required:
       - name
       properties:
-        name:
+        name: &reqServiceCalendarName
           type: string
-        startDate:
+          title: Name
+          description: 'Calendar name, e.g. "Weekdays" or "Holidays".'
+        startDate: &reqServiceCalendarStartDate
           type: string
           format: date
-        endDate:
+          title: Start Date
+          description: First service date covered by this calendar.
+        endDate: &reqServiceCalendarEndDate
           type: string
           format: date
-        monday:
+          title: End Date
+          description: Last service date covered by this calendar.
+        monday: &reqServiceCalendarMonday
           type: boolean
-        tuesday:
+          title: Monday
+          description: Whether the service runs on Mondays.
+        tuesday: &reqServiceCalendarTuesday
           type: boolean
-        wednesday:
+          title: Tuesday
+          description: Whether the service runs on Tuesdays.
+        wednesday: &reqServiceCalendarWednesday
           type: boolean
-        thursday:
+          title: Wednesday
+          description: Whether the service runs on Wednesdays.
+        thursday: &reqServiceCalendarThursday
           type: boolean
-        friday:
+          title: Thursday
+          description: Whether the service runs on Thursdays.
+        friday: &reqServiceCalendarFriday
           type: boolean
-        saturday:
+          title: Friday
+          description: Whether the service runs on Fridays.
+        saturday: &reqServiceCalendarSaturday
           type: boolean
-        sunday:
+          title: Saturday
+          description: Whether the service runs on Saturdays.
+        sunday: &reqServiceCalendarSunday
           type: boolean
+          title: Sunday
+          description: Whether the service runs on Sundays.
     UpdateServiceCalendarRequest:
       type: object
       required:
       - name
       properties:
-        name:
-          type: string
-        startDate:
-          type: string
-          format: date
-        endDate:
-          type: string
-          format: date
-        monday:
-          type: boolean
-        tuesday:
-          type: boolean
-        wednesday:
-          type: boolean
-        thursday:
-          type: boolean
-        friday:
-          type: boolean
-        saturday:
-          type: boolean
-        sunday:
-          type: boolean
+        name: *reqServiceCalendarName
+        startDate: *reqServiceCalendarStartDate
+        endDate: *reqServiceCalendarEndDate
+        monday: *reqServiceCalendarMonday
+        tuesday: *reqServiceCalendarTuesday
+        wednesday: *reqServiceCalendarWednesday
+        thursday: *reqServiceCalendarThursday
+        friday: *reqServiceCalendarFriday
+        saturday: *reqServiceCalendarSaturday
+        sunday: *reqServiceCalendarSunday
     ServiceCalendarPage:
       type: object
       required:
@@ -6703,32 +6745,34 @@ components:
       - calendarId
       - serviceDate
       properties:
-        calendarId:
+        calendarId: &reqServiceCalendarExceptionCalendarId
           type: string
           format: uuid
-        serviceDate:
+          title: Service Calendar
+          description: Calendar this exception applies to.
+        serviceDate: &reqServiceCalendarExceptionServiceDate
           type: string
           format: date
-        exceptionType:
+          title: Service Date
+          description: Date of the exception.
+        exceptionType: &reqServiceCalendarExceptionExceptionType
           type: string
-        description:
+          title: Exception Type
+          description: Whether service is added or removed on this date.
+        description: &reqServiceCalendarExceptionDescription
           type: string
+          title: Description
+          description: Free-form notes about the exception.
     UpdateServiceCalendarExceptionRequest:
       type: object
       required:
       - calendarId
       - serviceDate
       properties:
-        calendarId:
-          type: string
-          format: uuid
-        serviceDate:
-          type: string
-          format: date
-        exceptionType:
-          type: string
-        description:
-          type: string
+        calendarId: *reqServiceCalendarExceptionCalendarId
+        serviceDate: *reqServiceCalendarExceptionServiceDate
+        exceptionType: *reqServiceCalendarExceptionExceptionType
+        description: *reqServiceCalendarExceptionDescription
     ServiceCalendarExceptionPage:
       type: object
       required:
@@ -6772,43 +6816,48 @@ components:
       required:
       - trainNumber
       properties:
-        trainNumber:
+        trainNumber: &reqTrainTrainNumber
           type: string
-        trainName:
+          title: Train Number
+          description: 'Train number, e.g. "3064M".'
+        trainName: &reqTrainTrainName
           type: string
-        trainType:
+          title: Train Name
+          description: 'Name of the named train, e.g. "Azusa 5".'
+        trainType: &reqTrainTrainType
           type: string
-        description:
+          title: Train Type
+          description: Rolling stock or train classification.
+        description: &reqTrainDescription
           type: string
-        imageUrl:
+          title: Description
+          description: Free-form notes about the train.
+        imageUrl: &reqTrainImageUrl
           type: string
-        validFrom:
+          title: Image URL
+          description: URL of an image of the train.
+        validFrom: &reqTrainValidFrom
           type: string
           format: date
-        validTo:
+          title: Valid From
+          description: Date this record becomes effective.
+        validTo: &reqTrainValidTo
           type: string
           format: date
+          title: Valid To
+          description: Date this record stops being effective; leave empty if still current.
     UpdateTrainRequest:
       type: object
       required:
       - trainNumber
       properties:
-        trainNumber:
-          type: string
-        trainName:
-          type: string
-        trainType:
-          type: string
-        description:
-          type: string
-        imageUrl:
-          type: string
-        validFrom:
-          type: string
-          format: date
-        validTo:
-          type: string
-          format: date
+        trainNumber: *reqTrainTrainNumber
+        trainName: *reqTrainTrainName
+        trainType: *reqTrainTrainType
+        description: *reqTrainDescription
+        imageUrl: *reqTrainImageUrl
+        validFrom: *reqTrainValidFrom
+        validTo: *reqTrainValidTo
     TrainPage:
       type: object
       required:
@@ -6862,63 +6911,67 @@ components:
       required:
       - timetableVersionId
       properties:
-        timetableVersionId:
+        timetableVersionId: &reqTrainRunTimetableVersionId
           type: string
           format: uuid
-        operationRouteId:
+          title: Timetable Version
+          description: Timetable version this train run belongs to.
+        operationRouteId: &reqTrainRunOperationRouteId
           type: string
           format: uuid
-        calendarId:
+          title: Operation Route
+          description: Operated service this run follows.
+        calendarId: &reqTrainRunCalendarId
           type: string
           format: uuid
-        trainId:
+          title: Service Calendar
+          description: Calendar of days this run operates.
+        trainId: &reqTrainRunTrainId
           type: string
           format: uuid
-        trainNumber:
+          title: Train
+          description: Train operating this run.
+        trainNumber: &reqTrainRunTrainNumber
           type: string
-        direction:
+          title: Train Number
+          description: 'Train number of this run, e.g. "3064M".'
+        direction: &reqTrainRunDirection
           type: string
-        originStationId:
+          title: Direction
+          description: Travel direction of the run, e.g. inbound or outbound.
+        originStationId: &reqTrainRunOriginStationId
           type: string
           format: uuid
-        destinationStationId:
+          title: Origin Station
+          description: Station where the run originates.
+        destinationStationId: &reqTrainRunDestinationStationId
           type: string
           format: uuid
-        serviceType:
+          title: Destination Station
+          description: Station where the run terminates.
+        serviceType: &reqTrainRunServiceType
           type: string
-        note:
+          title: Service Type
+          description: Service pattern, e.g. local, rapid, or limited express.
+        note: &reqTrainRunNote
           type: string
+          title: Note
+          description: Free-form notes about the run.
     UpdateTrainRunRequest:
       type: object
       required:
       - timetableVersionId
       properties:
-        timetableVersionId:
-          type: string
-          format: uuid
-        operationRouteId:
-          type: string
-          format: uuid
-        calendarId:
-          type: string
-          format: uuid
-        trainId:
-          type: string
-          format: uuid
-        trainNumber:
-          type: string
-        direction:
-          type: string
-        originStationId:
-          type: string
-          format: uuid
-        destinationStationId:
-          type: string
-          format: uuid
-        serviceType:
-          type: string
-        note:
-          type: string
+        timetableVersionId: *reqTrainRunTimetableVersionId
+        operationRouteId: *reqTrainRunOperationRouteId
+        calendarId: *reqTrainRunCalendarId
+        trainId: *reqTrainRunTrainId
+        trainNumber: *reqTrainRunTrainNumber
+        direction: *reqTrainRunDirection
+        originStationId: *reqTrainRunOriginStationId
+        destinationStationId: *reqTrainRunDestinationStationId
+        serviceType: *reqTrainRunServiceType
+        note: *reqTrainRunNote
     TrainRunPage:
       type: object
       required:
@@ -6977,33 +7030,51 @@ components:
       - stationId
       - sequence
       properties:
-        trainRunId:
+        trainRunId: &reqTrainRunStopTrainRunId
           type: string
           format: uuid
-        stationId:
+          title: Train Run
+          description: Train run this stop belongs to.
+        stationId: &reqTrainRunStopStationId
           type: string
           format: uuid
-        platformId:
+          title: Station
+          description: Station of the stop.
+        platformId: &reqTrainRunStopPlatformId
           type: string
           format: uuid
-        sequence:
+          title: Platform
+          description: Platform used at this stop.
+        sequence: &reqTrainRunStopSequence
           type: integer
-        arrivalTime:
+          title: Sequence
+          description: Order of this stop along the run, starting at 1.
+        arrivalTime: &reqTrainRunStopArrivalTime
           type: string
           example: '14:30:00'
-          description: Local time of day (HH:MM:SS)
-        departureTime:
+          title: Arrival Time
+          description: Local arrival time of day (HH:MM:SS).
+        departureTime: &reqTrainRunStopDepartureTime
           type: string
           example: '14:30:00'
-          description: Local time of day (HH:MM:SS)
-        stopType:
+          title: Departure Time
+          description: Local departure time of day (HH:MM:SS).
+        stopType: &reqTrainRunStopStopType
           type: string
-        passengerBoarding:
+          title: Stop Type
+          description: Stopping behavior at this stop, e.g. stop or pass.
+        passengerBoarding: &reqTrainRunStopPassengerBoarding
           type: boolean
-        passengerAlighting:
+          title: Passenger Boarding
+          description: Whether passengers may board at this stop.
+        passengerAlighting: &reqTrainRunStopPassengerAlighting
           type: boolean
-        note:
+          title: Passenger Alighting
+          description: Whether passengers may alight at this stop.
+        note: &reqTrainRunStopNote
           type: string
+          title: Note
+          description: Free-form notes about the stop.
     UpdateTrainRunStopRequest:
       type: object
       required:
@@ -7011,33 +7082,16 @@ components:
       - stationId
       - sequence
       properties:
-        trainRunId:
-          type: string
-          format: uuid
-        stationId:
-          type: string
-          format: uuid
-        platformId:
-          type: string
-          format: uuid
-        sequence:
-          type: integer
-        arrivalTime:
-          type: string
-          example: '14:30:00'
-          description: Local time of day (HH:MM:SS)
-        departureTime:
-          type: string
-          example: '14:30:00'
-          description: Local time of day (HH:MM:SS)
-        stopType:
-          type: string
-        passengerBoarding:
-          type: boolean
-        passengerAlighting:
-          type: boolean
-        note:
-          type: string
+        trainRunId: *reqTrainRunStopTrainRunId
+        stationId: *reqTrainRunStopStationId
+        platformId: *reqTrainRunStopPlatformId
+        sequence: *reqTrainRunStopSequence
+        arrivalTime: *reqTrainRunStopArrivalTime
+        departureTime: *reqTrainRunStopDepartureTime
+        stopType: *reqTrainRunStopStopType
+        passengerBoarding: *reqTrainRunStopPassengerBoarding
+        passengerAlighting: *reqTrainRunStopPassengerAlighting
+        note: *reqTrainRunStopNote
     TrainRunStopPage:
       type: object
       required:
@@ -7080,32 +7134,38 @@ components:
       - mediaType
       - url
       properties:
-        mediaType:
+        mediaType: &reqMediaMediaType
           type: string
-        url:
+          title: Media Type
+          description: Kind of media file.
+          enum: [image, video, audio]
+        url: &reqMediaUrl
           type: string
-        title:
+          title: Media URL
+          description: Public URL of the uploaded media file; use the upload button to fill this.
+        title: &reqMediaTitle
           type: string
-        source:
+          title: Title
+          description: Human-readable title of the media.
+        source: &reqMediaSource
           type: string
-        license:
+          title: Source
+          description: Where the media came from, e.g. photographer or website.
+        license: &reqMediaLicense
           type: string
+          title: License
+          description: 'License of the media, e.g. "CC BY-SA 4.0".'
     UpdateMediaRequest:
       type: object
       required:
       - mediaType
       - url
       properties:
-        mediaType:
-          type: string
-        url:
-          type: string
-        title:
-          type: string
-        source:
-          type: string
-        license:
-          type: string
+        mediaType: *reqMediaMediaType
+        url: *reqMediaUrl
+        title: *reqMediaTitle
+        source: *reqMediaSource
+        license: *reqMediaLicense
     MediaPage:
       type: object
       required:
@@ -7147,16 +7207,25 @@ components:
       - entityType
       - entityId
       properties:
-        mediaId:
+        mediaId: &reqMediaAttachmentMediaId
           type: string
           format: uuid
-        entityType:
+          title: Media
+          description: Media record to attach.
+        entityType: &reqMediaAttachmentEntityType
           type: string
-        entityId:
+          title: Entity Type
+          description: Type of the entity the media is attached to.
+          enum: [station, platform, route, operation_route, train, company, track_segment]
+        entityId: &reqMediaAttachmentEntityId
           type: string
           format: uuid
-        sortOrder:
+          title: Entity
+          description: ID of the entity the media is attached to.
+        sortOrder: &reqMediaAttachmentSortOrder
           type: integer
+          title: Sort Order
+          description: Display order among the entity's attachments; lowest first.
     UpdateMediaAttachmentRequest:
       type: object
       required:
@@ -7164,16 +7233,10 @@ components:
       - entityType
       - entityId
       properties:
-        mediaId:
-          type: string
-          format: uuid
-        entityType:
-          type: string
-        entityId:
-          type: string
-          format: uuid
-        sortOrder:
-          type: integer
+        mediaId: *reqMediaAttachmentMediaId
+        entityType: *reqMediaAttachmentEntityType
+        entityId: *reqMediaAttachmentEntityId
+        sortOrder: *reqMediaAttachmentSortOrder
     MediaAttachmentPage:
       type: object
       required:

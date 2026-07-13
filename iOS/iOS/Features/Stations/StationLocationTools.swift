@@ -39,7 +39,7 @@ struct StationLocationTools: View {
                 initialBounds: nil,
                 onBoundsChanged: { _ in },
                 onMapTap: updateCoordinate,
-                onCandidateTap: { _ in },
+                onCandidateTap: { _, _ in },
                 onSavedStationTap: { _ in }
             )
             .frame(minHeight: 260)

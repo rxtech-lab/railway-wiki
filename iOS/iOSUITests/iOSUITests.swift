@@ -75,6 +75,12 @@ final class RailwayWikiUITests: XCTestCase {
         XCTAssertTrue(searchControl.waitForExistence(timeout: 5))
         XCTAssertTrue(candidatePanel.waitForExistence(timeout: 5))
 
+        expectation(
+            for: NSPredicate(format: "value == %@", "Centered"),
+            evaluatedWith: locationControl
+        )
+        waitForExpectations(timeout: 5)
+
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: searchControl)
         waitForExpectations(timeout: 10)
         searchControl.tap()
@@ -104,7 +110,9 @@ final class RailwayWikiUITests: XCTestCase {
         let add = app.buttons["map.candidate.add"]
         XCTAssertTrue(add.waitForExistence(timeout: 3))
         add.tap()
-        XCTAssertTrue(app.staticTexts["Already in Railway Wiki"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.alerts["Station Imported"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Fixture Halt was successfully imported."].exists)
+        XCTAssertFalse(add.exists, "The candidate popover should close after a successful import")
     }
 
     @MainActor

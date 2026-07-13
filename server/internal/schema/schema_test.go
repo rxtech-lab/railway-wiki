@@ -41,3 +41,74 @@ func TestRegistryMarksRelationsAndMultilineFields(t *testing.T) {
 	require.Equal(t, "relation", station["ui:widget"])
 	require.Equal(t, "stations", station["ui:options"].(map[string]any)["resource"])
 }
+
+// effectiveProperty unwraps the anyOf nullable rewrite so assertions can look
+// at the branch that carries title/description/enum.
+func effectiveProperty(t *testing.T, schema map[string]any, field string) map[string]any {
+	t.Helper()
+	properties, ok := schema["properties"].(map[string]any)
+	require.True(t, ok, "schema has no properties")
+	prop, ok := properties[field].(map[string]any)
+	require.True(t, ok, "missing property %q", field)
+	variants, ok := prop["anyOf"].([]any)
+	if !ok {
+		return prop
+	}
+	for _, v := range variants {
+		m := v.(map[string]any)
+		if m["type"] != "null" {
+			return m
+		}
+	}
+	t.Fatalf("property %q is anyOf with only null branches", field)
+	return nil
+}
+
+func TestRegistryServesEnums(t *testing.T) {
+	registry, err := NewRegistry()
+	require.NoError(t, err)
+
+	companyType := effectiveProperty(t, registry.For("Company", "create"), "companyType")
+	require.ElementsMatch(t,
+		[]any{"jr", "major_private", "semi_major", "third_sector", "public", "monorail", "tram", "other"},
+		companyType["enum"])
+
+	mediaType := effectiveProperty(t, registry.For("Media", "create"), "mediaType")
+	require.ElementsMatch(t, []any{"image", "video", "audio"}, mediaType["enum"])
+
+	entityType := effectiveProperty(t, registry.For("MediaAttachment", "create"), "entityType")
+	require.ElementsMatch(t,
+		[]any{"station", "platform", "route", "operation_route", "train", "company", "track_segment"},
+		entityType["enum"])
+}
+
+// TestRegistryServesTitlesAndDescriptions guards that every property of every
+// served form schema carries a human-readable title and description.
+func TestRegistryServesTitlesAndDescriptions(t *testing.T) {
+	registry, err := NewRegistry()
+	require.NoError(t, err)
+	for _, resource := range resources {
+		for _, action := range []string{"create", "update"} {
+			schema := registry.For(resource, action)
+			properties, ok := schema["properties"].(map[string]any)
+			require.True(t, ok, "%s|%s has no properties", resource, action)
+			for field := range properties {
+				prop := effectiveProperty(t, schema, field)
+				title, _ := prop["title"].(string)
+				description, _ := prop["description"].(string)
+				require.NotEmpty(t, title, "%s|%s property %q has no title", resource, action, field)
+				require.NotEmpty(t, description, "%s|%s property %q has no description", resource, action, field)
+			}
+		}
+	}
+}
+
+// TestRegistryUpdateMirrorsCreate spot-checks that the anchored/aliased
+// request schemas survive the OpenAPI pipeline identically for both actions.
+func TestRegistryUpdateMirrorsCreate(t *testing.T) {
+	registry, err := NewRegistry()
+	require.NoError(t, err)
+	create := effectiveProperty(t, registry.For("Company", "create"), "companyType")
+	update := effectiveProperty(t, registry.For("Company", "update"), "companyType")
+	require.Equal(t, create, update)
+}

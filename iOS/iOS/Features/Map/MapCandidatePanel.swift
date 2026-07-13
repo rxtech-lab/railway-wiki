@@ -32,16 +32,21 @@ struct MapCandidatePanel: View {
                 VStack(spacing: 0) {
                     CandidatePanelHeader(
                         count: store.candidates.count,
-                        search: compact ? {
+                        search: {
                             Task { await store.searchViewport(api: dependencies.api) }
-                        } : nil,
+                        },
                         isSearchDisabled: store.isSearching || !store.isViewportSearchable,
                         clear: {
                             store.candidates = []
                             store.selectedCandidate = nil
                         }
                     )
-                    MapCandidateList(store: store)
+                    MapCandidateList(
+                        store: store,
+                        search: {
+                            Task { await store.searchViewport(api: dependencies.api) }
+                        }
+                    )
                 }
             }
         }
@@ -126,7 +131,7 @@ struct CandidateQuickAddView: View {
 
 private struct CandidatePanelHeader: View {
     let count: Int
-    let search: (() -> Void)?
+    let search: () -> Void
     let isSearchDisabled: Bool
     let clear: () -> Void
 
@@ -140,11 +145,11 @@ private struct CandidatePanelHeader: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            if let search {
-                Button("Search This Area", systemImage: "magnifyingglass", action: search)
+            if count > 0 {
+                Button("Search More", systemImage: "magnifyingglass", action: search)
                     .labelStyle(.iconOnly)
                     .disabled(isSearchDisabled)
-                    .accessibilityIdentifier("map.candidates.searchViewport")
+                    .accessibilityIdentifier("map.searchViewport")
             }
             Button("Clear Candidates", systemImage: "xmark.circle", action: clear)
                 .labelStyle(.iconOnly)
@@ -158,6 +163,7 @@ private struct CandidatePanelHeader: View {
 
 private struct MapCandidateList: View {
     let store: MapStore
+    let search: () -> Void
 
     var body: some View {
         List {
@@ -176,11 +182,16 @@ private struct MapCandidateList: View {
         .scrollContentBackground(.hidden)
         .overlay {
             if store.candidates.isEmpty {
-                ContentUnavailableView(
-                    "No Railway Candidates",
-                    systemImage: "mappin.and.ellipse",
-                    description: Text("Search the visible map area to discover stations from OpenStreetMap.")
-                )
+                ContentUnavailableView {
+                    Label("No Railway Candidates", systemImage: "mappin.and.ellipse")
+                } description: {
+                    Text("Search the visible map area to discover stations from OpenStreetMap.")
+                } actions: {
+                    Button("Search This Area", systemImage: "magnifyingglass", action: search)
+                        .buttonStyle(.borderedProminent)
+                        .disabled(store.isSearching || !store.isViewportSearchable)
+                        .accessibilityIdentifier("map.searchViewport")
+                }
             }
         }
     }

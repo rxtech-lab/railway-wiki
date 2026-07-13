@@ -18,7 +18,11 @@ type Config struct {
 
 	// Management auth (OAuth/OIDC). Management endpoints require a JWT access
 	// token verified against the issuer's JWKS, discovered via OIDC discovery.
-	Issuer string // token issuer (OAUTH_ISSUER), required unless E2EMode
+	Issuer string // token issuer (OAUTH_ISSUER), required unless management auth is disabled
+
+	// SkipRoleCheck disables the management authentication middleware without
+	// enabling E2E data seeding. Intended only for local development.
+	SkipRoleCheck bool
 
 	// E2EMode disables management-API authentication and seeds a small set of
 	// sample rows on startup. Intended only for local SQLite end-to-end / UI
@@ -53,8 +57,9 @@ func Load() (*Config, error) {
 		Port:        getEnv("PORT", "8080"),
 		DatabaseURL: getEnv("DATABASE_URL", "file:railway.db"),
 
-		Issuer:  getEnv("OAUTH_ISSUER", ""),
-		E2EMode: getBool("E2E_MODE", false),
+		Issuer:        getEnv("OAUTH_ISSUER", ""),
+		SkipRoleCheck: getBool("SKIP_ROLE_CHECK", false),
+		E2EMode:       getBool("E2E_MODE", false),
 
 		S3Bucket:    getEnv("S3_BUCKET", ""),
 		S3Region:    getEnv("S3_REGION", "us-east-1"),

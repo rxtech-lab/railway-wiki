@@ -1,4 +1,4 @@
-.PHONY: install build test generate run docker clean e2e-client test-e2e
+.PHONY: install build test generate run run\:no-check docker clean e2e-client test-e2e
 
 install:
 	go get -tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
@@ -22,6 +22,10 @@ generate:
 
 run:
 	go run cmd/server/main.go
+
+# Run against the configured development database without management role checks.
+run\:no-check:
+	SKIP_ROLE_CHECK=true go run cmd/server/main.go
 
 # Run the server in E2E mode: local SQLite, management auth DISABLED, sample data
 # seeded on startup. Used for iOS UI tests and manual QA against a real server.

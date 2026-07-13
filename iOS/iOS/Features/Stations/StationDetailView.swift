@@ -26,13 +26,27 @@ struct StationDetailView: View {
     let resource: ResourceDefinition
     let record: ResourceRecord
     let onDeleted: () -> Void
+    let showsActions: Bool
     @State private var relations = StationRelationsStore()
+
+    init(
+        resource: ResourceDefinition,
+        record: ResourceRecord,
+        showsActions: Bool = true,
+        onDeleted: @escaping () -> Void
+    ) {
+        self.resource = resource
+        self.record = record
+        self.onDeleted = onDeleted
+        self.showsActions = showsActions
+    }
 
     var body: some View {
         ResourceDetailView(
             resource: resource,
             record: record,
             header: AnyView(header),
+            showsActions: showsActions,
             onDeleted: onDeleted
         )
         .task {
@@ -51,7 +65,7 @@ struct StationDetailView: View {
                     initialBounds: nil,
                     onBoundsChanged: { _ in },
                     onMapTap: { _, _ in },
-                    onCandidateTap: { _ in },
+                    onCandidateTap: { _, _ in },
                     onSavedStationTap: { _ in }
                 )
                 .frame(height: 240)

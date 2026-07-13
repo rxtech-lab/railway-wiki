@@ -7,6 +7,7 @@ struct ResourceDetailView: View {
     let resource: ResourceDefinition
     let onDeleted: () -> Void
     let header: AnyView?
+    let showsActions: Bool
     @State private var record: ResourceRecord
     @State private var presentsEdit = false
     @State private var confirmsDelete = false
@@ -16,11 +17,13 @@ struct ResourceDetailView: View {
         resource: ResourceDefinition,
         record: ResourceRecord,
         header: AnyView? = nil,
+        showsActions: Bool = true,
         onDeleted: @escaping () -> Void = {}
     ) {
         self.resource = resource
         self.onDeleted = onDeleted
         self.header = header
+        self.showsActions = showsActions
         _record = State(initialValue: record)
     }
 
@@ -39,16 +42,18 @@ struct ResourceDetailView: View {
         }
         .navigationTitle(record.title)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("Edit", systemImage: "pencil") { presentsEdit = true }
-                    .accessibilityIdentifier("record.edit")
-            }
-            ToolbarItem(placement: .secondaryAction) {
-                Menu {
-                    Button("Copy ID", systemImage: "doc.on.doc") { UIPasteboard.general.string = record.stableID }
-                    Button("Delete", systemImage: "trash", role: .destructive) { confirmsDelete = true }
-                } label: {
-                    Label("More", systemImage: "ellipsis.circle")
+            if showsActions {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Edit", systemImage: "pencil") { presentsEdit = true }
+                        .accessibilityIdentifier("record.edit")
+                }
+                ToolbarItem(placement: .secondaryAction) {
+                    Menu {
+                        Button("Copy ID", systemImage: "doc.on.doc") { UIPasteboard.general.string = record.stableID }
+                        Button("Delete", systemImage: "trash", role: .destructive) { confirmsDelete = true }
+                    } label: {
+                        Label("More", systemImage: "ellipsis.circle")
+                    }
                 }
             }
         }

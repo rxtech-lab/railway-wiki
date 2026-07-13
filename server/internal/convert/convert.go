@@ -24,7 +24,7 @@ func CompanyFromCreate(b *api.CreateCompanyRequest) models.Company {
 	return models.Company{
 		Name:        b.Name,
 		ShortName:   b.ShortName,
-		CompanyType: b.CompanyType,
+		CompanyType: (*string)(b.CompanyType),
 		Country:     b.Country,
 		Website:     b.Website,
 		ValidFrom:   fromDatePtr(b.ValidFrom),
@@ -35,7 +35,7 @@ func CompanyFromCreate(b *api.CreateCompanyRequest) models.Company {
 func CompanyApplyUpdate(b *api.UpdateCompanyRequest, m *models.Company) {
 	m.Name = b.Name
 	m.ShortName = b.ShortName
-	m.CompanyType = b.CompanyType
+	m.CompanyType = (*string)(b.CompanyType)
 	m.Country = b.Country
 	m.Website = b.Website
 	m.ValidFrom = fromDatePtr(b.ValidFrom)
@@ -796,7 +796,7 @@ func MediaToAPI(m *models.Media) api.Media {
 
 func MediaFromCreate(b *api.CreateMediaRequest) models.Media {
 	return models.Media{
-		MediaType: b.MediaType,
+		MediaType: string(b.MediaType),
 		Url:       b.Url,
 		Title:     b.Title,
 		Source:    b.Source,
@@ -805,7 +805,7 @@ func MediaFromCreate(b *api.CreateMediaRequest) models.Media {
 }
 
 func MediaApplyUpdate(b *api.UpdateMediaRequest, m *models.Media) {
-	m.MediaType = b.MediaType
+	m.MediaType = string(b.MediaType)
 	m.Url = b.Url
 	m.Title = b.Title
 	m.Source = b.Source
@@ -827,7 +827,7 @@ func MediaAttachmentToAPI(m *models.MediaAttachment) api.MediaAttachment {
 func MediaAttachmentFromCreate(b *api.CreateMediaAttachmentRequest) models.MediaAttachment {
 	return models.MediaAttachment{
 		MediaId:    uuidStr(b.MediaId),
-		EntityType: b.EntityType,
+		EntityType: string(b.EntityType),
 		EntityId:   uuidStr(b.EntityId),
 		SortOrder:  b.SortOrder,
 	}
@@ -835,7 +835,7 @@ func MediaAttachmentFromCreate(b *api.CreateMediaAttachmentRequest) models.Media
 
 func MediaAttachmentApplyUpdate(b *api.UpdateMediaAttachmentRequest, m *models.MediaAttachment) {
 	m.MediaId = uuidStr(b.MediaId)
-	m.EntityType = b.EntityType
+	m.EntityType = string(b.EntityType)
 	m.EntityId = uuidStr(b.EntityId)
 	m.SortOrder = b.SortOrder
 }

@@ -7,6 +7,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestLoadSkipRoleCheck(t *testing.T) {
+	t.Setenv("SKIP_ROLE_CHECK", "true")
+	t.Setenv("E2E_MODE", "false")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.True(t, cfg.SkipRoleCheck)
+	require.False(t, cfg.E2EMode)
+}
+
 func TestLoadOverpassDefaults(t *testing.T) {
 	for _, key := range []string{
 		"OVERPASS_UPSTREAM_URL", "OVERPASS_API_KEY", "OVERPASS_TIMEOUT",

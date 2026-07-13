@@ -28,6 +28,14 @@ final class NavigationModel {
         selectedRecord = record
     }
 
+    func openRecord(_ record: ResourceRecord, resourceID: String, compact: Bool) {
+        selectedSidebar = .resource(resourceID)
+        selectedRecord = record
+        if compact, let recordID = record.stableID {
+            compactPath.append(.record(resourceID: resourceID, recordID: recordID))
+        }
+    }
+
     func synchronizeForCompact() {
         var path: [CompactRoute] = [.destination(selectedSidebar)]
         if let recordID = selectedRecord?.stableID,

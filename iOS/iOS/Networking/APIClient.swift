@@ -110,7 +110,9 @@ final class APIClient {
     }
 
     func importCandidate(_ candidate: OverpassCandidate, overrides: [String: JSONValue]? = nil) async throws -> ResourceRecord {
-        let body = overrides.map { JSONValue.object(["overrides": .object($0)]) }
+        let body = JSONValue.object(
+            overrides.map { ["overrides": .object($0)] } ?? [:]
+        )
         return try await request(
             base: configuration.overpassAPIBaseURL,
             path: "stations/\(candidate.elementType)/\(candidate.elementId)/import",

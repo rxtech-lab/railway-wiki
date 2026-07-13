@@ -26,12 +26,15 @@ struct SidebarView: View {
                     .accessibilityIdentifier("sidebar.map")
             }
             ForEach(ResourceGroup.allCases) { group in
-                Section(group.rawValue) {
-                    ForEach(ResourceDefinition.all.filter { $0.group == group }) { resource in
-                        Label(resource.plural, systemImage: resource.icon)
-                            .tag(SidebarDestination.resource(resource.id))
-                            .accessibilityElement(children: .combine)
-                            .accessibilityIdentifier("sidebar.\(resource.id)")
+                let resources = ResourceDefinition.all.filter { $0.group == group && !$0.hidden }
+                if !resources.isEmpty {
+                    Section(group.rawValue) {
+                        ForEach(resources) { resource in
+                            Label(resource.plural, systemImage: resource.icon)
+                                .tag(SidebarDestination.resource(resource.id))
+                                .accessibilityElement(children: .combine)
+                                .accessibilityIdentifier("sidebar.\(resource.id)")
+                        }
                     }
                 }
             }
@@ -75,13 +78,16 @@ struct CompactSidebarView: View {
                 .accessibilityIdentifier("sidebar.map")
             }
             ForEach(ResourceGroup.allCases) { group in
-                Section(group.rawValue) {
-                    ForEach(ResourceDefinition.all.filter { $0.group == group }) { resource in
-                        NavigationLink(value: CompactRoute.destination(.resource(resource.id))) {
-                            Label(resource.plural, systemImage: resource.icon)
+                let resources = ResourceDefinition.all.filter { $0.group == group && !$0.hidden }
+                if !resources.isEmpty {
+                    Section(group.rawValue) {
+                        ForEach(resources) { resource in
+                            NavigationLink(value: CompactRoute.destination(.resource(resource.id))) {
+                                Label(resource.plural, systemImage: resource.icon)
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityIdentifier("sidebar.\(resource.id)")
                         }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityIdentifier("sidebar.\(resource.id)")
                     }
                 }
             }

@@ -26,6 +26,11 @@ struct SchemaFormSheet: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var confirmsClose = false
+    /// Media uploaded from the create form, attached once the entity exists.
+    @State private var pendingMedia: [ResourceRecord] = []
+    /// The record created by a save whose photo attachments failed, so a
+    /// retry updates it instead of creating a duplicate.
+    @State private var createdRecord: ResourceRecord?
 
     init(
         resource: ResourceDefinition,
@@ -77,6 +82,14 @@ struct SchemaFormSheet: View {
                         description: Text(errorMessage)
                     )
                 }
+                if let entityType = resource.mediaEntityType, schema != nil {
+                    EntityPhotosSection(
+                        api: dependencies.api,
+                        entityType: entityType,
+                        entityId: (record ?? createdRecord)?.stableID,
+                        pendingMedia: $pendingMedia
+                    )
+                }
             }
             .formStyle(.grouped)
             .scrollDismissesKeyboard(.interactively)
@@ -107,7 +120,10 @@ struct SchemaFormSheet: View {
         .interactiveDismissDisabled(true)
         .presentationDragIndicator(.hidden)
         .confirmationDialog("Discard changes?", isPresented: $confirmsClose) {
-            Button("Discard Changes", role: .destructive) { dismiss() }
+            Button("Discard Changes", role: .destructive) {
+                discardPendingMedia()
+                dismiss()
+            }
             Button("Keep Editing", role: .cancel) {}
         }
         .alert("Could Not Save", isPresented: errorBinding) {
@@ -156,10 +172,17 @@ struct SchemaFormSheet: View {
             let saved: ResourceRecord
             if let customSave {
                 saved = try await customSave(values)
-            } else if let id = record?.stableID {
+            } else if let id = (record ?? createdRecord)?.stableID {
                 saved = try await dependencies.api.update(resource, id: id, values: values)
             } else {
                 saved = try await dependencies.api.create(resource, values: values)
+            }
+            if record == nil { createdRecord = saved }
+            if let failed = await attachPendingMedia(to: saved) {
+                originalData = formData
+                onSaved(saved)
+                errorMessage = failed
+                return
             }
             originalData = formData
             onSaved(saved)
@@ -169,8 +192,49 @@ struct SchemaFormSheet: View {
         }
     }
 
+    /// Attaches queued media to the saved entity. Returns an error message
+    /// naming the failures (which stay queued for retry), or nil when done.
+    private func attachPendingMedia(to saved: ResourceRecord) async -> String? {
+        guard let entityType = resource.mediaEntityType,
+              let entityId = saved.stableID,
+              !pendingMedia.isEmpty
+        else { return nil }
+        var failures: [String] = []
+        for (index, media) in pendingMedia.enumerated() {
+            do {
+                try await EntityPhotosSection.attach(
+                    media: media,
+                    entityType: entityType,
+                    entityId: entityId,
+                    sortOrder: index,
+                    api: dependencies.api
+                )
+                pendingMedia.removeAll { $0.id == media.id }
+            } catch {
+                failures.append(media.title)
+            }
+        }
+        guard !failures.isEmpty else { return nil }
+        return "\(resource.singular) was saved, but these photos could not be attached: "
+            + "\(failures.joined(separator: ", ")). Tap Save to retry."
+    }
+
     private func requestClose() {
-        if formData == originalData { dismiss() } else { confirmsClose = true }
+        if formData == originalData, pendingMedia.isEmpty { dismiss() } else { confirmsClose = true }
+    }
+
+    /// Deletes queued-but-unattached Media records when the form is discarded.
+    private func discardPendingMedia() {
+        let media = pendingMedia
+        let api = dependencies.api
+        pendingMedia = []
+        Task {
+            for item in media {
+                if let id = item.stableID {
+                    try? await api.delete(EntityPhotosSection.mediaResource, id: id)
+                }
+            }
+        }
     }
 
     private var stagePicker: some View {

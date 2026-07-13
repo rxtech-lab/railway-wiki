@@ -34,9 +34,9 @@ func main() {
 	}
 
 	// Build the management authenticator (used as prefix middleware below).
-	// Skipped entirely in E2E mode, where management auth is disabled.
+	// Skipped when management auth is disabled for E2E or local development.
 	var authenticator auth.Authenticator
-	if !cfg.E2EMode {
+	if !cfg.E2EMode && !cfg.SkipRoleCheck {
 		authenticator, err = server.ProvideAuthenticator(cfg)
 		if err != nil {
 			log.Fatalf("Failed to initialize authenticator: %v", err)
@@ -55,6 +55,9 @@ func main() {
 			log.Fatalf("Failed to seed e2e data: %v", err)
 		}
 	}
+	if cfg.SkipRoleCheck {
+		log.Println("⚠️  SKIP_ROLE_CHECK enabled: management API auth is DISABLED — do not use in production")
+	}
 
 	app := fiber.New()
 	app.Use(recover.New())
@@ -63,8 +66,8 @@ func main() {
 
 	// Enforce the `admin` role on every management endpoint. Registered before
 	// the strict routes so it runs first for the /api/management prefix. Skipped
-	// in E2E mode so UI tests can drive the API without an OAuth flow.
-	if !cfg.E2EMode {
+	// when explicitly disabled for E2E or local development.
+	if !cfg.E2EMode && !cfg.SkipRoleCheck {
 		app.Use("/api/management", auth.RequireRole(authenticator, auth.AdminRole))
 	}
 

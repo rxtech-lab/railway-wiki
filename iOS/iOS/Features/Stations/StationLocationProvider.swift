@@ -48,6 +48,11 @@ final class StationLocationProvider: NSObject, ObservableObject, CLLocationManag
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        if let locationError = error as? CLError, locationError.code == .locationUnknown {
+            // Core Location reports this transiently while it is still trying to
+            // establish a fix. Keep the map usable instead of blocking it with an alert.
+            return
+        }
         errorMessage = error.localizedDescription
     }
 }

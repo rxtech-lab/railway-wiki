@@ -30,12 +30,12 @@ private struct RegularAppNavigation: View {
     var body: some View {
         @Bindable var navigation = dependencies.navigation
         Group {
-            if navigation.selectedSidebar == .map {
+            if navigation.selectedSidebar == .map || navigation.selectedSidebar == .dashboard {
                 NavigationSplitView {
                     SidebarView(selection: $navigation.selectedSidebar)
                         .toolbar { accountToolbar }
                 } detail: {
-                    MapPageView()
+                    detailColumn
                 }
                 .navigationSplitViewStyle(.balanced)
             } else {

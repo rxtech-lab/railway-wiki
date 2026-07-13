@@ -38,8 +38,20 @@ func TestRegistryMarksRelationsAndMultilineFields(t *testing.T) {
 	schema := registry.For("RouteStation", "create")
 	ui := schema["x-ui-schema"].(map[string]any)
 	station := ui["stationId"].(map[string]any)
-	require.Equal(t, "relation", station["ui:widget"])
-	require.Equal(t, "stations", station["ui:options"].(map[string]any)["resource"])
+	require.Equal(t, "foreign-key", station["ui:widget"])
+	options := station["ui:options"].(map[string]any)
+	require.Equal(t, "stations", options["endpoint"])
+	require.Equal(t, true, options["searchable"])
+
+	// Endpoints whose list handler has no q parameter are marked
+	// non-searchable so the picker hides its search bar.
+	platformTrack := registry.For("PlatformTrack", "create")
+	platformUI := platformTrack["x-ui-schema"].(map[string]any)
+	platform := platformUI["platformId"].(map[string]any)
+	require.Equal(t, "foreign-key", platform["ui:widget"])
+	platformOptions := platform["ui:options"].(map[string]any)
+	require.Equal(t, "platforms", platformOptions["endpoint"])
+	require.Equal(t, false, platformOptions["searchable"])
 }
 
 // effectiveProperty unwraps the anyOf nullable rewrite so assertions can look

@@ -674,7 +674,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sirily11/swift-jsonschema-form.git";
 			requirement = {
-				branch = main;
+				branch = "feat/foreign-key-field";
 				kind = branch;
 			};
 		};

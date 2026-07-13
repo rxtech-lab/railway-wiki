@@ -6,45 +6,12 @@ import UniformTypeIdentifiers
 enum FormWidgetRegistry {
     static func widgets(api: APIClient) -> [String: JSONSchemaFormWidget] {
         [
-            "relation": { AnyView(RelationFormWidget(context: $0, api: api)) },
+            // Foreign keys are handled by the library's built-in
+            // `foreign-key` field (see ManagementForeignKeyClient).
             "coordinate": { AnyView(CoordinateFormWidget(context: $0)) },
             "geojson": { AnyView(JSONFormWidget(context: $0)) },
             "media-upload": { AnyView(MediaUploadFormWidget(context: $0, api: api)) }
         ]
-    }
-}
-
-private struct RelationFormWidget: View {
-    let context: JSONSchemaFormWidgetContext
-    let api: APIClient
-    @State private var options: [ResourceRecord] = []
-
-    var body: some View {
-        Picker(context.propertyName?.humanized ?? "Related Record", selection: stringBinding) {
-            Text("None").tag("")
-            ForEach(options) { option in
-                Text(option.title).tag(option.stableID ?? "")
-            }
-        }
-        .accessibilityIdentifier(accessibilityID)
-        .task {
-            guard let field = context.propertyName,
-                  let resource = ResourceDefinition.relationResource(for: field)
-            else { return }
-            options = (try? await api.list(resource).items) ?? []
-        }
-    }
-
-    private var stringBinding: Binding<String> {
-        Binding {
-            context.formData.wrappedValue.string ?? ""
-        } set: { value in
-            context.formData.wrappedValue = value.isEmpty ? .null : .string(value)
-        }
-    }
-
-    private var accessibilityID: String {
-        (context.uiSchema?["ui:options"] as? [String: Any])?["accessibility_id"] as? String ?? context.id
     }
 }
 

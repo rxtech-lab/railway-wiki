@@ -71,6 +71,9 @@ struct SchemaFormSheet: View {
                         showErrorList: true,
                         showSubmitButton: false,
                         widgets: FormWidgetRegistry.widgets(api: dependencies.api),
+                        foreignKey: ForeignKeyConfiguration(
+                            client: ManagementForeignKeyClient(api: dependencies.api)
+                        ),
                         idPrefix: "form_\(resource.id)",
                         controller: controller
                     )

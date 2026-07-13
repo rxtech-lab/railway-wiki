@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sirily11/swift-jsonschema-form.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "ef60305109d6b7ac95a34083bf0f4fe3381ed458"
+        "revision" : "5d6531aec8e2df8ca3613981f7318c9479ef8483",
+        "version" : "1.0.8"
       }
     },
     {

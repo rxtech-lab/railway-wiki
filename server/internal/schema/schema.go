@@ -84,8 +84,11 @@ func applyUIMetadata(resource string, schema map[string]any) {
 		}
 		switch {
 		case strings.HasSuffix(field, "Id"):
-			configuration["ui:widget"] = "relation"
-			configuration["ui:options"].(map[string]any)["resource"] = relationResource(field)
+			endpoint := relationResource(field)
+			configuration["ui:widget"] = "foreign-key"
+			options := configuration["ui:options"].(map[string]any)
+			options["endpoint"] = endpoint
+			options["searchable"] = searchableEndpoints[endpoint]
 		case field == "areaGeo" || field == "geo":
 			configuration["ui:widget"] = "geojson"
 		case field == "latitude" || field == "longitude":
@@ -149,6 +152,20 @@ func present(fields []string, desired ...string) []string {
 		}
 	}
 	return result
+}
+
+// searchableEndpoints mirrors which management list handlers pass the q
+// query parameter through to the repository (see server.go); the picker UI
+// hides its search bar for the rest.
+var searchableEndpoints = map[string]bool{
+	"companies":          true,
+	"stations":           true,
+	"routes":             true,
+	"operation-routes":   true,
+	"timetable-versions": true,
+	"service-calendars":  true,
+	"trains":             true,
+	"media":              true,
 }
 
 func relationResource(field string) string {

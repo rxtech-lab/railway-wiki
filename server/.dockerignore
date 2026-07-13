@@ -1,0 +1,42 @@
+# Keep the build context small and reproducible. Nothing here is needed to
+# compile the server; generated code (gen.go, wire_gen.go) is rebuilt in-image.
+
+# VCS / CI
+.git
+.github
+
+# Local secrets and env files
+.env
+.env.*
+
+# Build output / binaries
+bin/
+main
+*.exe
+*.test
+
+# Local databases and scratch dirs
+*.db
+*.db-*
+tmp/
+temp/
+
+# Coverage / debug artifacts
+*.out
+coverage.*
+__debug*
+
+# Editor / OS cruft
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Container / compose files not used inside the image build
+docker-compose.yaml
+Dockerfile.vercel
+.dockerignore
+
+# End-to-end suite (not part of the server binary)
+e2e-tests/

@@ -7,6 +7,7 @@ import (
 	"github.com/rxtech-lab/railway-wiki/internal/auth"
 	"github.com/rxtech-lab/railway-wiki/internal/config"
 	"github.com/rxtech-lab/railway-wiki/internal/media"
+	"github.com/rxtech-lab/railway-wiki/internal/overpass"
 )
 
 // ProvideAuthenticator builds the OAuth/OIDC management authenticator. Access
@@ -16,6 +17,21 @@ func ProvideAuthenticator(cfg *config.Config) (auth.Authenticator, error) {
 		return nil, fmt.Errorf("management auth requires OAUTH_ISSUER")
 	}
 	return auth.NewJWKSAuthenticator(context.Background(), cfg.Issuer)
+}
+
+// ProvideOverpassClient builds the bounded server-side proxy client. Its API
+// key is intentionally read only from backend configuration.
+func ProvideOverpassClient(cfg *config.Config) (overpass.Client, error) {
+	return overpass.NewHTTPClient(overpass.Settings{
+		URL:           cfg.OverpassURL,
+		APIKey:        cfg.OverpassAPIKey,
+		Timeout:       cfg.OverpassTimeout,
+		CacheTTL:      cfg.OverpassCacheTTL,
+		MaxCandidates: cfg.OverpassMaxCandidates,
+		MaxResponse:   cfg.OverpassMaxResponse,
+		MinInterval:   cfg.OverpassMinInterval,
+		UserAgent:     cfg.OverpassUserAgent,
+	})
 }
 
 // ProvidePresigner builds the media presigner. When no bucket is configured a

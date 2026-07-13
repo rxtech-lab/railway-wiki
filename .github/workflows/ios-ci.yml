@@ -1,0 +1,135 @@
+name: iOS CI
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  swiftlint:
+    name: SwiftLint 0.65.0
+    runs-on: [self-hosted, macOS, ARM64, regular]
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: iOS
+    env:
+      SOURCE_PACKAGES_DIR: railway-wiki-source-packages
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Verify Xcode
+        run: xcodebuild -version
+
+      - name: Restore resolved packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SOURCE_PACKAGES_DIR }}
+          key: ios-spm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('iOS/iOS.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
+      - name: Resolve pinned packages
+        run: >-
+          xcodebuild -resolvePackageDependencies
+          -project iOS.xcodeproj
+          -scheme iOS
+          -clonedSourcePackagesDirPath "${SOURCE_PACKAGES_DIR}"
+
+      - name: Strict SwiftLint from resolved artifact
+        run: ./scripts/swiftlint.sh "${SOURCE_PACKAGES_DIR}"
+
+  e2e-ios:
+    name: iOS E2E (real server, iPad)
+    runs-on: [self-hosted, macOS, ARM64, ui-tests]
+    timeout-minutes: 60
+    needs: swiftlint
+    defaults:
+      run:
+        working-directory: iOS
+    env:
+      SOURCE_PACKAGES_DIR: ${{ github.workspace }}/railway-wiki-source-packages
+      DERIVED_DATA_DIR: ${{ github.workspace }}/railway-wiki-e2e-derived-data
+      E2E_SERVER_LOG: ${{ github.workspace }}/railway-e2e-server.log
+      E2E_XCODEBUILD_LOG: ${{ github.workspace }}/railway-e2e-xcodebuild.log
+      E2E_RESULT_BUNDLE: ${{ github.workspace }}/railway-e2e.xcresult
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Verify Xcode
+        run: xcodebuild -version
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: Generate server API and dependency wiring
+        run: |
+          go -C ../server generate ./tools/...
+          go -C ../server tool github.com/google/wire/cmd/wire ./internal/server
+
+      - name: Restore resolved packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SOURCE_PACKAGES_DIR }}
+          key: ios-spm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('iOS/iOS.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
+      - name: Resolve pinned packages
+        run: >-
+          xcodebuild -resolvePackageDependencies
+          -project iOS.xcodeproj
+          -scheme iOS
+          -clonedSourcePackagesDirPath "${SOURCE_PACKAGES_DIR}"
+
+      - name: Prepare simulator (clean state)
+        run: |
+          xcrun simctl shutdown all 2>/dev/null || true
+          xcrun simctl erase all 2>/dev/null || true
+          DEVICE_UDID=$(python3 scripts/select-simulator.py "iPad Pro 13-inch (M5)")
+          xcrun simctl boot "${DEVICE_UDID}" || true
+          xcrun simctl bootstatus "${DEVICE_UDID}" -b
+
+      - name: Run UI test against real E2E_MODE server
+        run: ./scripts/e2e-ios.sh
+
+      - name: Upload server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: railway-e2e-server-log
+          path: ${{ env.E2E_SERVER_LOG }}
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload xcodebuild log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: railway-e2e-xcodebuild-log
+          path: ${{ env.E2E_XCODEBUILD_LOG }}
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload test result bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: railway-e2e-xcresult
+          path: ${{ env.E2E_RESULT_BUNDLE }}
+          retention-days: 7
+          if-no-files-found: ignore

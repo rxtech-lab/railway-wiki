@@ -32,7 +32,7 @@ cp .env.example .env
 DATABASE_URL=file:railway.db
 PORT=8080
 
-# Management endpoints require an OAuth/OIDC JWT access token (role=admin).
+# Management endpoints require an OAuth/OIDC JWT access token whose `roles` array includes `admin`.
 # The JWKS is discovered from the issuer via OIDC discovery:
 OAUTH_ISSUER=https://issuer.example.com/
 ```
@@ -103,6 +103,11 @@ The API is documented using OpenAPI 3.0. View the specification at:
 - `DELETE /api/management/{resource}/{id}` - Delete
 - `GET /api/management/{resource}/schema?action=create|update` - JSON Schema for the request body
 - `POST /api/management/media/upload-url` - Presigned media upload target
+- `GET /api/management/dashboard` - Counts and station coordinate coverage
+- `GET /api/management/overpass/stations` - Bounded railway candidate search
+- `POST /api/management/overpass/stations/{type}/{id}/import` - Verified OSM import
+- `GET|PUT /api/management/routes/{id}/configuration` - Atomic route editor data
+- `POST /api/management/routes/{id}/configuration/validate` - Validate an unsaved route
 
 Resources: `companies`, `stations`, `station-codes`, `station-transfers`,
 `platforms`, `routes`, `route-companies`, `route-stations`, `track-segments`,
@@ -110,6 +115,13 @@ Resources: `companies`, `stations`, `station-codes`, `station-transfers`,
 `operation-route-sections`, `operation-route-stops`, `timetable-versions`,
 `service-calendars`, `service-calendar-exceptions`, `trains`, `train-runs`,
 `train-run-stops`, `media`, `media-attachments`.
+
+The app never sends arbitrary Overpass QL. It requests a bounded viewport or
+point search from the management API; the server builds the query, applies
+timeouts/response limits/cache/throttling, and defaults to the public
+`https://overpass-api.de/api/interpreter` endpoint. A private endpoint and its
+server-only key can still be configured with `OVERPASS_UPSTREAM_URL` and
+`OVERPASS_API_KEY`.
 
 ### Project Structure
 

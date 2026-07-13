@@ -12,7 +12,7 @@ import (
 )
 
 // JWKSAuthenticator validates signed JWT access tokens against the identity
-// provider's JWKS and extracts the caller's role from the `role` claim. The
+// provider's JWKS and extracts the caller's roles from the `roles` claim. The
 // JWKS endpoint is discovered from the issuer via OIDC discovery, and the
 // issuer is enforced on every token.
 type JWKSAuthenticator struct {
@@ -76,6 +76,24 @@ func (a *JWKSAuthenticator) Authenticate(_ context.Context, token string) (*Prin
 		return nil, ErrUnauthorized
 	}
 	sub, _ := claims["sub"].(string)
-	role, _ := claims["role"].(string)
-	return &Principal{Subject: sub, Role: role}, nil
+	roles := stringSliceClaim(claims["roles"])
+	return &Principal{Subject: sub, Roles: roles}, nil
+}
+
+func stringSliceClaim(value any) []string {
+	values, ok := value.([]any)
+	if !ok {
+		if roles, ok := value.([]string); ok {
+			return roles
+		}
+		return nil
+	}
+
+	roles := make([]string, 0, len(values))
+	for _, value := range values {
+		if role, ok := value.(string); ok {
+			roles = append(roles, role)
+		}
+	}
+	return roles
 }

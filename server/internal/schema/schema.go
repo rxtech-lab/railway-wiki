@@ -10,6 +10,9 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
+	"unicode"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
@@ -56,10 +59,137 @@ func NewRegistry() (*Registry, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert schema %q: %w", comp, err)
 			}
+			applyUIMetadata(res, m)
 			reg.byKey[res+"|"+action] = m
 		}
 	}
 	return reg, nil
+}
+
+func applyUIMetadata(resource string, schema map[string]any) {
+	properties, _ := schema["properties"].(map[string]any)
+	fields := make([]string, 0, len(properties))
+	for field := range properties {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+	fields = preferredOrder(resource, fields)
+
+	uiSchema := map[string]any{"ui:order": fields}
+	for _, field := range fields {
+		configuration := map[string]any{
+			"ui:options": map[string]any{
+				"accessibility_id": "form." + kebab(resource) + "." + field,
+			},
+		}
+		switch {
+		case strings.HasSuffix(field, "Id"):
+			configuration["ui:widget"] = "relation"
+			configuration["ui:options"].(map[string]any)["resource"] = relationResource(field)
+		case field == "areaGeo" || field == "geo":
+			configuration["ui:widget"] = "geojson"
+		case field == "latitude" || field == "longitude":
+			configuration["ui:widget"] = "coordinate"
+		case field == "description" || field == "note":
+			configuration["ui:widget"] = "textarea"
+		case resource == "Media" && field == "url":
+			configuration["ui:widget"] = "media-upload"
+		}
+		uiSchema[field] = configuration
+	}
+	schema["x-ui-schema"] = uiSchema
+	schema["x-ui-layout"] = layout(resource, fields)
+}
+
+func preferredOrder(resource string, available []string) []string {
+	if resource != "Station" {
+		return available
+	}
+	preferred := []string{"name", "nameEn", "stationNumber", "description", "latitude", "longitude", "areaGeo", "openedAt", "closedAt"}
+	known := make(map[string]bool, len(available))
+	for _, value := range available {
+		known[value] = true
+	}
+	result := make([]string, 0, len(available))
+	for _, value := range preferred {
+		if known[value] {
+			result = append(result, value)
+			delete(known, value)
+		}
+	}
+	for _, value := range available {
+		if known[value] {
+			result = append(result, value)
+		}
+	}
+	return result
+}
+
+func layout(resource string, fields []string) []map[string]any {
+	if resource != "Station" {
+		return []map[string]any{{"id": "details", "title": "Details", "fields": fields}}
+	}
+	return []map[string]any{
+		{"id": "basics", "title": "Basics", "fields": present(fields, "name", "nameEn", "stationNumber", "description")},
+		{"id": "location", "title": "Location", "fields": present(fields, "latitude", "longitude", "areaGeo")},
+		{"id": "operations", "title": "Operations", "fields": present(fields, "openedAt", "closedAt")},
+		{"id": "review", "title": "Review", "fields": []string{}},
+	}
+}
+
+func present(fields []string, desired ...string) []string {
+	available := make(map[string]bool, len(fields))
+	for _, field := range fields {
+		available[field] = true
+	}
+	result := make([]string, 0, len(desired))
+	for _, field := range desired {
+		if available[field] {
+			result = append(result, field)
+		}
+	}
+	return result
+}
+
+func relationResource(field string) string {
+	base := strings.TrimSuffix(field, "Id")
+	switch base {
+	case "company":
+		return "companies"
+	case "station", "fromStation", "toStation", "originStation", "destinationStation":
+		return "stations"
+	case "route":
+		return "routes"
+	case "operationRoute":
+		return "operation-routes"
+	case "calendar":
+		return "service-calendars"
+	case "timetableVersion":
+		return "timetable-versions"
+	case "train":
+		return "trains"
+	case "trainRun":
+		return "train-runs"
+	case "platform":
+		return "platforms"
+	case "trackSegment":
+		return "track-segments"
+	case "media":
+		return "media"
+	default:
+		return kebab(base) + "s"
+	}
+}
+
+func kebab(value string) string {
+	var result strings.Builder
+	for index, character := range value {
+		if unicode.IsUpper(character) && index > 0 {
+			result.WriteByte('-')
+		}
+		result.WriteRune(unicode.ToLower(character))
+	}
+	return result.String()
 }
 
 // For returns the JSON Schema document for a resource + action, or an empty
@@ -87,18 +217,18 @@ func toJSONSchema(s *openapi3.Schema) (map[string]any, error) {
 }
 
 // normalize recursively rewrites OpenAPI 3.0 constructs into JSON Schema
-// draft-2020-12: `nullable: true` becomes a "null" member of `type`.
+// draft-2020-12. Nullable schemas use anyOf instead of a type array because the
+// iOS JSONSchema decoder accepts only a single string in the type keyword.
 func normalize(node any) {
 	switch v := node.(type) {
 	case map[string]any:
-		if nullable, ok := v["nullable"].(bool); ok {
-			delete(v, "nullable")
-			if nullable {
-				v["type"] = withNull(v["type"])
-			}
-		}
+		nullable, _ := v["nullable"].(bool)
+		delete(v, "nullable")
 		for _, child := range v {
 			normalize(child)
+		}
+		if nullable {
+			wrapNullable(v)
 		}
 	case []any:
 		for _, child := range v {
@@ -107,19 +237,14 @@ func normalize(node any) {
 	}
 }
 
-// withNull adds "null" to a JSON Schema type, which may be a string or a list.
-func withNull(t any) any {
-	switch tv := t.(type) {
-	case string:
-		return []any{tv, "null"}
-	case []any:
-		for _, e := range tv {
-			if s, ok := e.(string); ok && s == "null" {
-				return tv
-			}
-		}
-		return append(tv, "null")
-	default:
-		return "null"
+func wrapNullable(schema map[string]any) {
+	nonNull := make(map[string]any, len(schema))
+	for key, value := range schema {
+		nonNull[key] = value
+		delete(schema, key)
+	}
+	schema["anyOf"] = []any{
+		nonNull,
+		map[string]any{"type": "null"},
 	}
 }

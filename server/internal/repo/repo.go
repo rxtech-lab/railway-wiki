@@ -34,6 +34,11 @@ type Filter struct {
 	Cursor *string
 	// Limit is the requested page size (nil => default).
 	Limit *int
+	// Optional station viewport. Either all four values are supplied or none.
+	South *float64
+	West  *float64
+	North *float64
+	East  *float64
 }
 
 // Repository is a generic CRUD repository for model T (pointer type PT).
@@ -57,6 +62,16 @@ func New[T any, PT interface {
 // the last page). Pagination is keyset: WHERE id > cursor ORDER BY id LIMIT n+1.
 func (r *Repository[T, PT]) List(ctx context.Context, f Filter) ([]T, *string, error) {
 	q := r.db.WithContext(ctx).Model(new(T))
+
+	hasBounds := f.South != nil || f.West != nil || f.North != nil || f.East != nil
+	if hasBounds {
+		if f.South == nil || f.West == nil || f.North == nil || f.East == nil ||
+			*f.South < -90 || *f.North > 90 || *f.West < -180 || *f.East > 180 ||
+			*f.South >= *f.North || *f.West >= *f.East {
+			return nil, nil, ErrBadRequest
+		}
+		q = q.Where("latitude BETWEEN ? AND ? AND longitude BETWEEN ? AND ?", *f.South, *f.North, *f.West, *f.East)
+	}
 
 	for col, v := range f.Eq {
 		if isNil(v) {

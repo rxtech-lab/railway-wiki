@@ -182,6 +182,10 @@ paths:
         description: Free-text search on name / English name
         schema:
           type: string
+      - $ref: '#/components/parameters/SouthParam'
+      - $ref: '#/components/parameters/WestParam'
+      - $ref: '#/components/parameters/NorthParam'
+      - $ref: '#/components/parameters/EastParam'
       responses:
         '200':
           description: A page of stations
@@ -1399,6 +1403,10 @@ paths:
         description: Free-text search on name / English name
         schema:
           type: string
+      - $ref: '#/components/parameters/SouthParam'
+      - $ref: '#/components/parameters/WestParam'
+      - $ref: '#/components/parameters/NorthParam'
+      - $ref: '#/components/parameters/EastParam'
       responses:
         '200':
           description: A page of stations
@@ -4707,6 +4715,201 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /api/management/dashboard:
+    get:
+      summary: Get management dashboard metrics
+      operationId: adminGetDashboard
+      tags:
+      - Health
+      responses:
+        '200':
+          description: Resource counts and station coordinate coverage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/management/overpass/stations:
+    get:
+      summary: Find bounded railway station candidates through Overpass
+      description: Supply either all viewport bounds or latitude/longitude. Arbitrary Overpass QL is never accepted.
+      operationId: adminSearchOverpassStations
+      tags:
+      - Stations (Management)
+      parameters:
+      - $ref: '#/components/parameters/SouthParam'
+      - $ref: '#/components/parameters/WestParam'
+      - $ref: '#/components/parameters/NorthParam'
+      - $ref: '#/components/parameters/EastParam'
+      - name: lat
+        in: query
+        schema:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+      - name: lon
+        in: query
+        schema:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+      - name: radiusMeters
+        in: query
+        description: Radial search distance; defaults to 2000 metres.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          default: 2000
+      responses:
+        '200':
+          description: Normalized railway station candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverpassStationCandidatePage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+  /api/management/overpass/stations/{elementType}/{elementId}/import:
+    post:
+      summary: Refetch and import one Overpass station candidate
+      operationId: adminImportOverpassStation
+      tags:
+      - Stations (Management)
+      parameters:
+      - name: elementType
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [node, way, relation]
+      - name: elementId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportStationRequest'
+      responses:
+        '200':
+          description: Station already imported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Station'
+        '201':
+          description: Newly imported station
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Station'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+  /api/management/routes/{id}/configuration:
+    get:
+      summary: Get a route and its ordered stations
+      operationId: adminGetRouteConfiguration
+      tags:
+      - Routes (Management)
+      parameters:
+      - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Route editor configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteConfiguration'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Atomically replace a route and its ordered stations
+      operationId: adminUpdateRouteConfiguration
+      tags:
+      - Routes (Management)
+      parameters:
+      - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteConfigurationRequest'
+      responses:
+        '200':
+          description: Saved route configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteConfiguration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/management/routes/{id}/configuration/validate:
+    post:
+      summary: Validate an unsaved route configuration
+      operationId: adminValidateRouteConfiguration
+      tags:
+      - Routes (Management)
+      parameters:
+      - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteConfigurationRequest'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteValidationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     bearerAuth:
@@ -4740,6 +4943,42 @@ components:
       schema:
         type: string
         format: uuid
+    SouthParam:
+      name: south
+      in: query
+      required: false
+      schema:
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+    WestParam:
+      name: west
+      in: query
+      required: false
+      schema:
+        type: number
+        format: double
+        minimum: -180
+        maximum: 180
+    NorthParam:
+      name: north
+      in: query
+      required: false
+      schema:
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+    EastParam:
+      name: east
+      in: query
+      required: false
+      schema:
+        type: number
+        format: double
+        minimum: -180
+        maximum: 180
   responses:
     BadRequest:
       description: Invalid request
@@ -4771,7 +5010,159 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Request rate limited
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadGateway:
+      description: Upstream Overpass service failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    GatewayTimeout:
+      description: Upstream Overpass service timed out
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
+    DashboardResourceMetric:
+      type: object
+      required: [resource, count]
+      properties:
+        resource:
+          type: string
+        count:
+          type: integer
+          format: int64
+    DashboardStationCoverage:
+      type: object
+      required: [total, withCoordinates]
+      properties:
+        total:
+          type: integer
+          format: int64
+        withCoordinates:
+          type: integer
+          format: int64
+    DashboardResponse:
+      type: object
+      required: [resources, stationCoverage, generatedAt]
+      properties:
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardResourceMetric'
+        stationCoverage:
+          $ref: '#/components/schemas/DashboardStationCoverage'
+        generatedAt:
+          type: string
+          format: date-time
+    OverpassStationCandidate:
+      type: object
+      required: [elementType, elementId, name, latitude, longitude, tags]
+      properties:
+        elementType:
+          type: string
+          enum: [node, way, relation]
+        elementId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        nameEn:
+          type: string
+        ref:
+          type: string
+        railway:
+          type: string
+        mode:
+          type: string
+        operator:
+          type: string
+        network:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        importedStationId:
+          type: string
+          format: uuid
+    OverpassStationCandidatePage:
+      type: object
+      required: [items, generatedAt]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OverpassStationCandidate'
+        generatedAt:
+          type: string
+          format: date-time
+    ImportStationRequest:
+      type: object
+      properties:
+        overrides:
+          $ref: '#/components/schemas/UpdateStationRequest'
+    RouteStationDraft:
+      type: object
+      required: [stationId]
+      properties:
+        id:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        distanceFromStartKm:
+          type: number
+          format: double
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+    RouteConfigurationRequest:
+      type: object
+      required: [route, stations]
+      properties:
+        route:
+          $ref: '#/components/schemas/UpdateRouteRequest'
+        stations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RouteStationDraft'
+    RouteConfiguration:
+      type: object
+      required: [route, stations]
+      properties:
+        route:
+          $ref: '#/components/schemas/Route'
+        stations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RouteStation'
+    RouteValidationResponse:
+      type: object
+      required: [valid, errors]
+      properties:
+        valid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
     HealthResponse:
       type: object
       required:
@@ -4915,6 +5306,19 @@ components:
         closedAt:
           type: string
           format: date
+        osmElementType:
+          type: string
+          enum: [node, way, relation]
+          readOnly: true
+        osmElementId:
+          type: integer
+          format: int64
+          readOnly: true
+        osmTags:
+          type: object
+          additionalProperties:
+            type: string
+          readOnly: true
     CreateStationRequest:
       type: object
       required:

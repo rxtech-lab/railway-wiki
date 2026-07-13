@@ -1,0 +1,26 @@
+appId: app.rxlab.railwaywiki
+name: Locked schema form sheet
+---
+- launchApp:
+    clearState: true
+    arguments:
+      E2E_API_BASE_URL: http://127.0.0.1:18080
+      E2E_OVERPASS_API_BASE_URL: http://127.0.0.1:18080/api/management/overpass
+      E2E_OSM_STACK_BASE_URL: http://127.0.0.1:18080
+      E2E_OSM_MAPS_API_KEY: maestro-maps-only-key
+      E2E_AUTH_CLIENT_ID: maestro-client
+      E2E_AUTH_TOKEN: maestro-admin-token
+- tapOn:
+    id: sidebar.stations
+- tapOn:
+    id: resource.stations.add
+- assertVisible:
+    id: form.close
+- swipe:
+    direction: DOWN
+- assertVisible:
+    id: form.close
+- tapOn:
+    id: form.close
+- assertNotVisible:
+    id: form.close

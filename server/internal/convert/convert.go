@@ -45,17 +45,25 @@ func CompanyApplyUpdate(b *api.UpdateCompanyRequest, m *models.Company) {
 // Station ---------------------------------------------------------------------
 
 func StationToAPI(m *models.Station) api.Station {
+	var osmElementType *api.StationOsmElementType
+	if m.OsmElementType != nil {
+		value := api.StationOsmElementType(*m.OsmElementType)
+		osmElementType = &value
+	}
 	return api.Station{
-		Id:            idPtr(m.ID),
-		Name:          m.Name,
-		NameEn:        m.NameEn,
-		StationNumber: m.StationNumber,
-		Description:   m.Description,
-		Latitude:      m.Latitude,
-		Longitude:     m.Longitude,
-		AreaGeo:       toGeo(m.AreaGeo),
-		OpenedAt:      datePtr(m.OpenedAt),
-		ClosedAt:      datePtr(m.ClosedAt),
+		Id:             idPtr(m.ID),
+		Name:           m.Name,
+		NameEn:         m.NameEn,
+		StationNumber:  m.StationNumber,
+		Description:    m.Description,
+		Latitude:       m.Latitude,
+		Longitude:      m.Longitude,
+		AreaGeo:        toGeo(m.AreaGeo),
+		OpenedAt:       datePtr(m.OpenedAt),
+		ClosedAt:       datePtr(m.ClosedAt),
+		OsmElementType: osmElementType,
+		OsmElementId:   m.OsmElementId,
+		OsmTags:        toStringMap(m.OsmTags),
 	}
 }
 

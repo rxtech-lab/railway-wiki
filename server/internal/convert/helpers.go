@@ -95,3 +95,14 @@ func fromGeo(m *map[string]interface{}) datatypes.JSON {
 	}
 	return datatypes.JSON(b)
 }
+
+func toStringMap(j datatypes.JSON) *map[string]string {
+	if len(j) == 0 {
+		return nil
+	}
+	var values map[string]string
+	if err := json.Unmarshal(j, &values); err != nil {
+		return nil
+	}
+	return &values
+}

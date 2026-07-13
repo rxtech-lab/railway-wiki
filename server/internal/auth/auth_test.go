@@ -25,9 +25,9 @@ func TestRequireRole(t *testing.T) {
 		principal  *Principal
 		wantStatus int
 	}{
-		{name: "admin is allowed", principal: &Principal{Role: AdminRole}, wantStatus: http.StatusNoContent},
-		{name: "non-admin is forbidden", principal: &Principal{Role: "user"}, wantStatus: http.StatusForbidden},
-		{name: "missing role is forbidden", principal: &Principal{}, wantStatus: http.StatusForbidden},
+		{name: "admin is allowed", principal: &Principal{Roles: []string{"member", AdminRole}}, wantStatus: http.StatusNoContent},
+		{name: "non-admin is forbidden", principal: &Principal{Roles: []string{"member"}}, wantStatus: http.StatusForbidden},
+		{name: "missing roles is forbidden", principal: &Principal{}, wantStatus: http.StatusForbidden},
 	}
 
 	for _, tt := range tests {
@@ -41,6 +41,26 @@ func TestRequireRole(t *testing.T) {
 			resp, err := app.Test(req)
 			require.NoError(t, err)
 			require.Equal(t, tt.wantStatus, resp.StatusCode)
+		})
+	}
+}
+
+func TestStringSliceClaim(t *testing.T) {
+	tests := []struct {
+		name  string
+		value any
+		want  []string
+	}{
+		{name: "JWT map claim", value: []any{"member", "admin"}, want: []string{"member", "admin"}},
+		{name: "string slice", value: []string{"admin"}, want: []string{"admin"}},
+		{name: "singular role is rejected", value: "admin", want: nil},
+		{name: "non-string entries are ignored", value: []any{"admin", 42}, want: []string{"admin"}},
+		{name: "missing claim", value: nil, want: nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, stringSliceClaim(tt.value))
 		})
 	}
 }

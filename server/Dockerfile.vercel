@@ -1,0 +1,47 @@
+# syntax=docker/dockerfile:1
+#
+# OCI image for deploying the railway-wiki server as a Vercel container Function.
+# See https://vercel.com/kb/guide/does-vercel-support-docker-deployments
+#
+# The runtime listens on $PORT (Vercel injects this) and is stateless: point
+# DATABASE_URL at a remote Turso/libSQL instance and configure the S3_* vars for
+# media uploads — a container Function scales to zero and keeps no local disk.
+
+# --- Build stage ------------------------------------------------------------
+FROM golang:1.24-bookworm AS builder
+
+WORKDIR /src
+
+# Download modules first so this layer caches across source-only changes.
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the source tree.
+COPY . .
+
+# Regenerate the two code-gen artifacts that are gitignored (and therefore
+# absent from a clean checkout / Vercel's git-based build context):
+#   - internal/api/gen.go          (oapi-codegen, via the tools/ generate stub)
+#   - internal/server/wire_gen.go  (google/wire)
+# Both generators are declared in go.mod's `tool` block, so `go tool` resolves
+# and builds them with no separate install step. (server.go and the schema copy
+# are committed, so the python/cp steps from `make generate` aren't needed.)
+RUN go generate ./tools/... \
+ && go tool github.com/google/wire/cmd/wire ./internal/server
+
+# Build a static, stripped binary. Every dependency is pure Go (libSQL client +
+# modernc SQLite), so CGO is not required.
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" \
+      -o /out/server ./cmd/server
+
+# --- Runtime stage ----------------------------------------------------------
+# distroless/static ships CA certificates (needed for Turso/OIDC/S3 over TLS)
+# and runs as a non-root user, with no shell or package manager.
+FROM gcr.io/distroless/static-debian12:nonroot
+
+COPY --from=builder /out/server /server
+
+ENV PORT=8080
+EXPOSE 8080
+
+ENTRYPOINT ["/server"]

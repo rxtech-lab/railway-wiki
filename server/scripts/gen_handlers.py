@@ -38,6 +38,8 @@ def filter_expr(sing, filters):
         parts.append(f"Eq: map[string]any{{{eq}}}")
     if sing in HAS_Q:
         parts.append("Q: r.Params.Q")
+    if sing == "Station":
+        parts.extend(["South: r.Params.South", "West: r.Params.West", "North: r.Params.North", "East: r.Params.East"])
     parts.append("Cursor: r.Params.Cursor")
     parts.append("Limit: r.Params.Limit")
     return "repo.Filter{" + ", ".join(parts) + "}"
@@ -84,6 +86,7 @@ import (
 \t"github.com/rxtech-lab/railway-wiki/internal/convert"
 \t"github.com/rxtech-lab/railway-wiki/internal/media"
 \t"github.com/rxtech-lab/railway-wiki/internal/models"
+\t"github.com/rxtech-lab/railway-wiki/internal/overpass"
 \t"github.com/rxtech-lab/railway-wiki/internal/repo"
 \t"github.com/rxtech-lab/railway-wiki/internal/schema"
 \t"github.com/rxtech-lab/railway-wiki/internal/service"
@@ -103,8 +106,10 @@ out.append("")
 # struct
 out.append("// Server holds every resource service plus infra dependencies.")
 out.append("type Server struct {")
+out.append("\tdb *gorm.DB")
 out.append("\tschemas *schema.Registry")
 out.append("\tpresign media.Presigner")
+out.append("\toverpass overpass.Client")
 for sing, plural, field, cols, filters in RES:
     out.append(f"\t{field} svc{sing}")
 out.append("}")
@@ -112,10 +117,12 @@ out.append("")
 
 # constructor
 out.append("// NewServer builds the Server, constructing all resource services from db.")
-out.append("func NewServer(db *gorm.DB, presign media.Presigner, schemas *schema.Registry) *Server {")
+out.append("func NewServer(db *gorm.DB, presign media.Presigner, schemas *schema.Registry, overpassClient overpass.Client) *Server {")
 out.append("\treturn &Server{")
+out.append("\t\tdb: db,")
 out.append("\t\tschemas: schemas,")
 out.append("\t\tpresign: presign,")
+out.append("\t\toverpass: overpassClient,")
 for sing, plural, field, cols, filters in RES:
     colargs = "".join(f', "{c}"' for c in cols)
     out.append(f"\t\t{field}: service.New(repo.New[models.{sing}](db{colargs}), convert.{sing}ToAPI, convert.{sing}FromCreate, convert.{sing}ApplyUpdate),")

@@ -1,0 +1,10 @@
+#include "Base.xcconfig"
+
+RAILWAY_API_BASE_URL = http:/$()/localhost:8080
+OVERPASS_API_BASE_URL = http:/$()/localhost:8080/api/management/overpass
+OSM_STACK_BASE_URL = https:/$()/tiles.openfreemap.org
+OSM_MAP_STYLE_PATH = /styles/liberty
+OSM_MAPS_API_KEY = public
+AUTH_CLIENT_ID = client_f2973973aabf49de86de268b4aa58b25
+
+#include? "Secrets.Debug.xcconfig"

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/glebarez/sqlite"
 	_ "github.com/tursodatabase/libsql-client-go/libsql" // registers the pure-Go "libsql" database/sql driver
@@ -29,13 +30,25 @@ func NewConnection(url string) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// SQLite/libSQL is single-writer; keep the pool tight to avoid "database is
-	// locked" errors under concurrent writes.
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
 	}
-	sqlDB.SetMaxOpenConns(1)
+
+	if isRemoteLibSQL(url) {
+		// Remote Turso serves each connection as an HTTP/2 stream and closes
+		// idle streams server-side. If database/sql hands out a stream Turso has
+		// already dropped, the query fails with "stream is closed: driver: bad
+		// connection". Recycle connections well before that idle cutoff, and
+		// allow a small pool so dashboard queries don't serialize on one stream.
+		sqlDB.SetMaxOpenConns(10)
+		sqlDB.SetMaxIdleConns(2)
+		sqlDB.SetConnMaxIdleTime(9 * time.Second)
+	} else {
+		// Local SQLite is single-writer; keep the pool tight to avoid "database
+		// is locked" errors under concurrent writes.
+		sqlDB.SetMaxOpenConns(1)
+	}
 
 	if err := Migrate(db); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)

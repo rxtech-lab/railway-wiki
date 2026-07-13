@@ -1,0 +1,35 @@
+appId: app.rxlab.railwaywiki
+name: Map discovery and route editor
+---
+- launchApp:
+    clearState: true
+    arguments:
+      E2E_API_BASE_URL: http://127.0.0.1:18080
+      E2E_OVERPASS_API_BASE_URL: http://127.0.0.1:18080/api/management/overpass
+      E2E_OSM_STACK_BASE_URL: http://127.0.0.1:18080
+      E2E_OSM_MAPS_API_KEY: maestro-maps-only-key
+      E2E_AUTH_CLIENT_ID: maestro-client
+      E2E_AUTH_TOKEN: maestro-admin-token
+- tapOn:
+    id: sidebar.map
+- assertVisible:
+    id: map.page
+- assertVisible:
+    id: map.searchReady
+- tapOn:
+    id: map.searchViewport
+- assertVisible:
+    id: map.candidates
+- scrollUntilVisible:
+    element:
+      id: sidebar.routes
+    direction: DOWN
+- tapOn:
+    id: sidebar.routes
+- assertVisible:
+    id: resource.routes.list
+- tapOn: Harbour Line
+- assertVisible:
+    id: route.editor
+- assertVisible:
+    id: route.save

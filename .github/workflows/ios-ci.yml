@@ -22,7 +22,7 @@ jobs:
       SOURCE_PACKAGES_DIR: railway-wiki-source-packages
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -32,7 +32,7 @@ jobs:
         run: xcodebuild -version
 
       - name: Restore resolved packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ env.SOURCE_PACKAGES_DIR }}
           key: ios-spm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('iOS/iOS.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
@@ -63,7 +63,7 @@ jobs:
       E2E_RESULT_BUNDLE: ${{ github.workspace }}/railway-e2e.xcresult
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -73,7 +73,7 @@ jobs:
         run: xcodebuild -version
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: server/go.mod
           cache-dependency-path: server/go.sum
@@ -84,7 +84,7 @@ jobs:
           go -C ../server tool github.com/google/wire/cmd/wire ./internal/server
 
       - name: Restore resolved packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ env.SOURCE_PACKAGES_DIR }}
           key: ios-spm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('iOS/iOS.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
@@ -109,7 +109,7 @@ jobs:
 
       - name: Upload server log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: railway-e2e-server-log
           path: ${{ env.E2E_SERVER_LOG }}
@@ -118,7 +118,7 @@ jobs:
 
       - name: Upload xcodebuild log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: railway-e2e-xcodebuild-log
           path: ${{ env.E2E_XCODEBUILD_LOG }}
@@ -127,7 +127,7 @@ jobs:
 
       - name: Upload test result bundle
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: railway-e2e-xcresult
           path: ${{ env.E2E_RESULT_BUNDLE }}
